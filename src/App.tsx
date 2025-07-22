@@ -1,25 +1,41 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import RecordPage from './pages/RecordPage';
+import JITRequestPage from './pages/JITRequestPage';
+import JITRequestable from './pages/JITRequestable';
+import { AuthProvider } from './contexts/MockAuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/records/:id" element={
+            <ProtectedRoute>
+              <RecordPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/jit-request" element={
+            <ProtectedRoute>
+              <JITRequestPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/jit-requestable" element={
+            <ProtectedRoute>
+              <JITRequestable />
+            </ProtectedRoute>
+          } />
+        </Routes>
+        <AnalyticsDashboard />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
