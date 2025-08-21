@@ -12,8 +12,7 @@ interface UserBehaviorData {
   action: string;
   sessionId: string;
   sessionPeriod: number;
-  riskLevel: string;
-  riskScore: number;
+  riskScore: number; // Default to 0, will be updated by ML model
   metadata: {
     realm: string;
     clientId: string;
@@ -50,34 +49,12 @@ const getUserIP = async (): Promise<string> => {
   }
 };
 
-// Generate random risk level and score for demonstration
-const generateRiskData = () => {
-  const riskLevels = ['low', 'medium', 'high'];
-  const randomLevel = riskLevels[Math.floor(Math.random() * riskLevels.length)];
-  let riskScore: number;
-  
-  switch (randomLevel) {
-    case 'low':
-      riskScore = Math.random() * 0.3; // 0-0.3
-      break;
-    case 'medium':
-      riskScore = 0.3 + Math.random() * 0.4; // 0.3-0.7
-      break;
-    case 'high':
-      riskScore = 0.7 + Math.random() * 0.3; // 0.7-1.0
-      break;
-    default:
-      riskScore = Math.random();
-  }
-  
-  return { riskLevel: randomLevel, riskScore: Number(riskScore.toFixed(3)) };
-};
+// Note: Risk score generation removed - will be handled by ML model
 
 // Create behavior data object
 const createBehaviorData = async (action: string): Promise<UserBehaviorData> => {
   const userInfo = getUserInfo();
   const ipAddress = await getUserIP();
-  const { riskLevel, riskScore } = generateRiskData();
   
   return {
     username: userInfo?.username || 'anonymous',
@@ -90,8 +67,7 @@ const createBehaviorData = async (action: string): Promise<UserBehaviorData> => 
     action,
     sessionId: currentSessionId!,
     sessionPeriod: getSessionPeriod(),
-    riskLevel,
-    riskScore,
+    riskScore: 0, // Default to 0, will be updated by ML model
     metadata: {
       realm: process.env.REACT_APP_KEYCLOAK_REALM || 'demo',
       clientId: process.env.REACT_APP_KEYCLOAK_CLIENT_ID || 'demo-client',
@@ -108,7 +84,6 @@ const sendBehaviorData = async (data: UserBehaviorData): Promise<void> => {
       user: data.username,
       timestamp: data.timestamp.toISOString(),
       sessionPeriod: `${data.sessionPeriod} minutes`,
-      riskLevel: data.riskLevel,
       riskScore: data.riskScore,
       ipAddress: data.ipAddress,
     });

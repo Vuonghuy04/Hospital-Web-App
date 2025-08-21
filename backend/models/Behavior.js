@@ -45,16 +45,13 @@ const behaviorSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  riskLevel: {
-    type: String,
-    enum: ['low', 'medium', 'high'],
-    default: 'low'
-  },
+
   riskScore: {
     type: Number,
     min: 0,
     max: 1,
-    default: 0
+    required: true,
+    default: 0 // Default to 0, will be updated by ML model
   },
   metadata: {
     realm: {

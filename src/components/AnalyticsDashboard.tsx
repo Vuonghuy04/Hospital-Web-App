@@ -12,8 +12,8 @@ interface BehaviorData {
   action: string;
   sessionId: string;
   sessionPeriod: number;
-  riskLevel: string;
-  riskScore: number;
+
+  riskScore: number; // Default to 0, will be updated by ML model
   metadata: {
     realm: string;
     clientId: string;
@@ -42,14 +42,7 @@ const AnalyticsDashboard = () => {
     }
   };
 
-  const getRiskLevelColor = (level: string) => {
-    switch (level) {
-      case 'low': return 'text-green-600 bg-green-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      case 'high': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
+
 
   const formatTimestamp = (timestamp: Date | string) => {
     const date = new Date(timestamp);
@@ -106,19 +99,19 @@ const AnalyticsDashboard = () => {
             </div>
             <div className="bg-green-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-green-600">
-                {behaviorData.filter(d => d.riskLevel === 'low').length}
+                {behaviorData.filter(d => d.riskScore === 0).length}
               </div>
-              <div className="text-sm text-gray-600">Low Risk</div>
+              <div className="text-sm text-gray-600">Pending ML</div>
             </div>
             <div className="bg-yellow-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-yellow-600">
-                {behaviorData.filter(d => d.riskLevel === 'medium').length}
+                {behaviorData.filter(d => d.riskScore > 0 && d.riskScore < 0.7).length}
               </div>
-              <div className="text-sm text-gray-600">Medium Risk</div>
+              <div className="text-sm text-gray-600">Low-Medium Risk</div>
             </div>
             <div className="bg-red-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-red-600">
-                {behaviorData.filter(d => d.riskLevel === 'high').length}
+                {behaviorData.filter(d => d.riskScore >= 0.7).length}
               </div>
               <div className="text-sm text-gray-600">High Risk</div>
             </div>
@@ -192,23 +185,20 @@ const AnalyticsDashboard = () => {
                         <div>{item.sessionPeriod}m</div>
                         <div className="text-xs">{item.sessionId.slice(-8)}</div>
                       </td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className={`px-2 py-1 rounded text-xs ${getRiskLevelColor(item.riskLevel)}`}>
-                          {item.riskLevel}
-                        </span>
-                      </td>
+
                       <td className="px-4 py-3 text-sm text-gray-900">
                         <div className="flex items-center">
                           <div className="w-12 bg-gray-200 rounded-full h-2 mr-2">
                             <div 
                               className={`h-2 rounded-full ${
+                                item.riskScore === 0 ? 'bg-gray-500' :
                                 item.riskScore > 0.7 ? 'bg-red-500' : 
                                 item.riskScore > 0.3 ? 'bg-yellow-500' : 'bg-green-500'
                               }`}
-                              style={{ width: `${item.riskScore * 100}%` }}
+                              style={{ width: `${item.riskScore > 0 ? item.riskScore * 100 : 10}%` }}
                             ></div>
                           </div>
-                          <span className="text-xs">{item.riskScore}</span>
+                          <span className="text-xs">{item.riskScore > 0 ? item.riskScore.toFixed(3) : 'Pending ML'}</span>
                         </div>
                       </td>
                     </tr>
