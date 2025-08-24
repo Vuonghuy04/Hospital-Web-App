@@ -34,7 +34,7 @@ import authMiddleware from './middleware/auth.js';
     process.exit(1);
   }
 
-  const PORT = process.env.PORT || 5000;
+  const PORT = process.env.PORT || 5001;
   const app = express();
   
   // Middleware
@@ -54,10 +54,49 @@ import authMiddleware from './middleware/auth.js';
     });
   });
 
+  // Database viewer endpoint
+  app.get('/api/database-viewer', async (req, res) => {
+    try {
+      const db = mongoose.connection.db;
+      if (!db) {
+        return res.status(500).json({ error: 'Database not connected' });
+      }
+
+      // Get all collections
+      const collections = await db.listCollections().toArray();
+      const databaseInfo = {
+        databaseName: db.databaseName,
+        collections: [],
+        totalCollections: collections.length,
+        timestamp: new Date().toISOString()
+      };
+
+      // Get data from each collection
+      for (const collection of collections) {
+        const collectionName = collection.name;
+        const count = await db.collection(collectionName).countDocuments();
+        const sampleDocs = await db.collection(collectionName).find({}).limit(5).toArray();
+        
+        databaseInfo.collections.push({
+          name: collectionName,
+          documentCount: count,
+          sampleDocuments: sampleDocs,
+          indexes: await db.collection(collectionName).indexes()
+        });
+      }
+
+      res.json(databaseInfo);
+    } catch (error) {
+      console.error('Database viewer error:', error);
+      res.status(500).json({ error: 'Failed to fetch database info', details: error.message });
+    }
+  });
+
   const server = app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📊 Behavior API available at http://localhost:${PORT}/api/behavior-tracking`);
     console.log(`💊 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`🗄️ Database viewer: http://localhost:${PORT}/api/database-viewer`);
   });
 
   // Graceful shutdown

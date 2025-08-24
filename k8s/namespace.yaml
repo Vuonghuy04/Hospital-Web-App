@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hospital-web-app
+  labels:
+    name: hospital-web-app
+    linkerd.io/inject: enabled

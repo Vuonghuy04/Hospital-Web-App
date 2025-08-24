@@ -76,6 +76,9 @@ const createBehaviorData = async (action: string): Promise<UserBehaviorData> => 
   };
 };
 
+// Determine API base URL
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+
 // Send behavior data to backend (or log for now)
 const sendBehaviorData = async (data: UserBehaviorData): Promise<void> => {
   try {
@@ -101,7 +104,7 @@ const sendBehaviorData = async (data: UserBehaviorData): Promise<void> => {
 
     // Send to backend API
     try {
-      const response = await fetch('http://localhost:5000/api/behavior-tracking', {
+      const response = await fetch(`${API_BASE_URL}/api/behavior-tracking`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
