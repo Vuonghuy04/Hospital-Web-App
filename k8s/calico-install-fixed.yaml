@@ -1,0 +1,316 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: calico-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: calico-node
+  namespace: calico-system
+  labels:
+    k8s-app: calico-node
+spec:
+  selector:
+    matchLabels:
+      k8s-app: calico-node
+  template:
+    metadata:
+      labels:
+        k8s-app: calico-node
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      hostNetwork: true
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      serviceAccountName: calico-node
+      containers:
+      - name: calico-node
+        image: docker.io/calico/node:v3.26.1
+        env:
+        - name: DATASTORE_TYPE
+          value: "kubernetes"
+        - name: WAIT_FOR_DATASTORE
+          value: "true"
+        - name: NODENAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: CALICO_NETWORKING_BACKEND
+          value: "bird"
+        - name: CLUSTER_TYPE
+          value: "k8s,bgp"
+        - name: IP
+          value: "autodetect"
+        - name: IP_AUTODETECT_METHOD
+          value: "first-found"
+        - name: CALICO_IPV4POOL_CIDR
+          value: "192.168.0.0/16"
+        - name: CALICO_IPV4POOL_IPIP
+          value: "Always"
+        - name: CALICO_IPV4POOL_VXLAN
+          value: "Never"
+        - name: FELIX_IPINIPMODE
+          value: "Always"
+        - name: FELIX_VXLANENABLED
+          value: "false"
+        - name: FELIX_WIREGUARDENABLED
+          value: "false"
+        - name: CALICO_DISABLE_FILE_LOGGING
+          value: "true"
+        - name: FELIX_DEFAULTENDPOINTTOHOSTACTION
+          value: "ACCEPT"
+        - name: FELIX_LOGFILEPATH
+          value: "none"
+        - name: FELIX_LOGSEVERITYSCREEN
+          value: "Info"
+        - name: FELIX_LOGSEVERITYSYS
+          value: "Info"
+        - name: FELIX_HEALTHENABLED
+          value: "true"
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            cpu: 250m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 500Mi
+        volumeMounts:
+        - name: lib-modules
+          mountPath: /lib/modules
+        - name: var-run-calico
+          mountPath: /var/run/calico
+        - name: var-lib-calico
+          mountPath: /var/lib/calico
+        - name: xtables-lock
+          mountPath: /run/xtables.lock
+        - name: cni-bin-dir
+          mountPath: /opt/cni/bin
+        - name: cni-net-dir
+          mountPath: /etc/cni/net.d
+        - name: policysync
+          mountPath: /var/run/nodeagent
+      volumes:
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
+      - name: var-run-calico
+        hostPath:
+          path: /var/run/calico
+      - name: var-lib-calico
+        hostPath:
+          path: /var/lib/calico
+      - name: xtables-lock
+        hostPath:
+          path: /run/xtables.lock
+          type: FileOrCreate
+      - name: cni-bin-dir
+        hostPath:
+          path: /opt/cni/bin
+      - name: cni-net-dir
+        hostPath:
+          path: /etc/cni/net.d
+      - name: policysync
+        hostPath:
+          path: /var/run/nodeagent
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calico-kube-controllers
+  namespace: calico-system
+  labels:
+    k8s-app: calico-kube-controllers
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: calico-kube-controllers
+  template:
+    metadata:
+      labels:
+        k8s-app: calico-kube-controllers
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      serviceAccountName: calico-kube-controllers
+      containers:
+      - name: calico-kube-controllers
+        image: docker.io/calico/kube-controllers:v3.26.1
+        env:
+        - name: DATASTORE_TYPE
+          value: "kubernetes"
+        - name: ENABLED_CONTROLLERS
+          value: "node"
+        - name: LOG_LEVEL
+          value: "info"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: calico-node
+  namespace: calico-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: calico-kube-controllers
+  namespace: calico-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: calico-node
+rules:
+- apiGroups: [""]
+  resources:
+  - pods
+  - nodes
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: [""]
+  resources:
+  - endpoints
+  - services
+  verbs:
+  - watch
+  - list
+  - get
+- apiGroups: [""]
+  resources:
+  - nodes/status
+  verbs:
+  - patch
+  - update
+- apiGroups: [""]
+  resources:
+  - pods/status
+  verbs:
+  - patch
+  - update
+- apiGroups: networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
+  - watch
+  - list
+- apiGroups: networking.k8s.io
+  resources:
+  - networkpolicies/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - watch
+  - list
+- apiGroups: networking.k8s.io
+  resources:
+  - ingresses/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: extensions
+  resources:
+  - ingresses
+  verbs:
+  - watch
+  - list
+- apiGroups: extensions
+  resources:
+  - ingresses/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: [""]
+  resources:
+  - events
+  verbs:
+  - create
+  - update
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: calico-kube-controllers
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - namespaces
+  - pods
+  - endpoints
+  - services
+  - nodes/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: [""]
+  resources:
+  - nodes/status
+  verbs:
+  - patch
+  - update
+- apiGroups: networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
+  - watch
+  - list
+- apiGroups: [""]
+  resources:
+  - events
+  verbs:
+  - create
+  - update
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: calico-node
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: calico-node
+subjects:
+- kind: ServiceAccount
+  name: calico-node
+  namespace: calico-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: calico-kube-controllers
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: calico-node
+subjects:
+- kind: ServiceAccount
+  name: calico-kube-controllers
+  namespace: calico-system

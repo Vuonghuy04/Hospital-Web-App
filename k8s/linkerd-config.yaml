@@ -1,0 +1,86 @@
+apiVersion: linkerd.io/v1beta2
+kind: ServiceProfile
+metadata:
+  name: hospital-backend-service.hospital-web-app.svc.cluster.local
+  namespace: hospital-web-app
+spec:
+  routes:
+  - name: GET /api/health
+    condition:
+      method: GET
+      pathRegex: /api/health
+    responseClasses:
+    - condition:
+        status:
+          min: 200
+          max: 299
+      isFailure: false
+    - condition:
+        status:
+          min: 500
+          max: 599
+      isFailure: true
+  - name: GET /api/behavior-tracking
+    condition:
+      method: GET
+      pathRegex: /api/behavior-tracking
+    responseClasses:
+    - condition:
+        status:
+          min: 200
+          max: 299
+      isFailure: false
+    - condition:
+        status:
+          min: 500
+          max: 599
+      isFailure: true
+  - name: POST /api/behavior-tracking
+    condition:
+      method: POST
+      pathRegex: /api/behavior-tracking
+    responseClasses:
+    - condition:
+        status:
+          min: 200
+          max: 299
+      isFailure: false
+    - condition:
+        status:
+          min: 500
+          max: 599
+      isFailure: true
+---
+apiVersion: linkerd.io/v1beta2
+kind: ServiceProfile
+metadata:
+  name: hospital-frontend-service.hospital-web-app.svc.cluster.local
+  namespace: hospital-web-app
+spec:
+  routes:
+  - name: GET /
+    condition:
+      method: GET
+      pathRegex: /
+    responseClasses:
+    - condition:
+        status:
+          min: 200
+          max: 299
+      isFailure: false
+    - condition:
+        status:
+          min: 500
+          max: 599
+      isFailure: true
+---
+apiVersion: linkerd.io/v1beta2
+kind: TrafficSplit
+metadata:
+  name: hospital-backend-split
+  namespace: hospital-web-app
+spec:
+  service: hospital-backend-service
+  backends:
+  - service: hospital-backend-service
+    weight: 100

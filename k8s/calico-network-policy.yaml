@@ -1,0 +1,101 @@
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: hospital-app-default-deny
+spec:
+  tier: default
+  order: 1000
+  selector: all()
+  types:
+  - Ingress
+  - Egress
+  ingress: []
+  egress: []
+---
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: hospital-app-allow-dns
+spec:
+  tier: default
+  order: 900
+  selector: all()
+  types:
+  - Egress
+  egress:
+  - action: Allow
+    protocol: UDP
+    destination:
+      ports:
+      - 53
+      nets:
+      - 10.96.0.0/12
+      - 172.16.0.0/12
+---
+apiVersion: projectcalico.org/v3
+kind: NetworkPolicy
+metadata:
+  name: hospital-app-frontend-policy
+  namespace: hospital-web-app
+spec:
+  selector: app == "hospital-frontend"
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Allow
+    protocol: TCP
+    destination:
+      ports:
+      - 3000
+    source:
+      selector: app == "hospital-backend"
+  - action: Allow
+    protocol: TCP
+    destination:
+      ports:
+      - 3000
+    source:
+      nets:
+      - 0.0.0.0/0
+  egress:
+  - action: Allow
+    protocol: TCP
+    destination:
+      selector: app == "hospital-backend"
+      ports:
+      - 5001
+---
+apiVersion: projectcalico.org/v3
+kind: NetworkPolicy
+metadata:
+  name: hospital-app-backend-policy
+  namespace: hospital-web-app
+spec:
+  selector: app == "hospital-backend"
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Allow
+    protocol: TCP
+    destination:
+      ports:
+      - 5001
+    source:
+      selector: app == "hospital-frontend"
+  - action: Allow
+    protocol: TCP
+    destination:
+      ports:
+      - 5001
+    source:
+      selector: app == "linkerd-proxy"
+  egress:
+  - action: Allow
+    protocol: TCP
+    destination:
+      nets:
+      - 0.0.0.0/0
+      ports:
+      - 27017
