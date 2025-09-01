@@ -18,6 +18,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: () => void;
   logout: () => void;
+  getRedirectPath: () => string;
 }
 
 // Create context
@@ -58,6 +59,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (authenticated) {
           const userInfo = getUserInfo();
+          console.log('🔍 Raw user info from Keycloak:', userInfo);
+          console.log('🔍 Raw roles from Keycloak:', userInfo?.roles);
+          console.log('🔍 Role count:', userInfo?.roles?.length || 0);
+          
           if (userInfo) {
             const userData = {
               username: userInfo.username,
@@ -67,6 +72,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               roles: userInfo.roles,
             };
             
+            console.log('🔍 Processed user data:', userData);
+            console.log('🔍 User roles in userData:', userData.roles);
+            console.log('🔍 Username:', userData.username);
+            
             setUser(userData);
             setIsAuthenticated(true);
             
@@ -74,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             sessionStorage.setItem('hospital_user', JSON.stringify(userData));
             sessionStorage.setItem('hospital_authenticated', 'true');
             
-            console.log('User authenticated:', userInfo);
+            console.log('User authenticated and cached:', userData);
             
             // Track login/session verification
             await trackLogin();
@@ -123,12 +132,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     keycloakLogout();
   };
 
+  const getRedirectPath = (): string => {
+    console.log('getRedirectPath called with user:', user);
+    
+    if (!user || !user.roles) {
+      console.log('getRedirectPath: No user or roles, returning /');
+      return '/';
+    }
+
+    // Role hierarchy for redirect logic
+    const roleHierarchy: { [key: string]: number } = {
+      'user': 1,
+      'staff': 2,
+      'nurse': 3,
+      'doctor': 4,
+      'manager': 5,
+      'admin': 6
+    };
+
+    // Get the highest role level
+    const roleLevels = user.roles.map(role => roleHierarchy[role] || 0);
+    const userRoleLevel = Math.max(...roleLevels);
+    
+    console.log('getRedirectPath: User roles:', user.roles);
+    console.log('getRedirectPath: Role levels:', roleLevels);
+    console.log('getRedirectPath: Max role level:', userRoleLevel);
+    
+    // Admin users go to admin dashboard
+    if (userRoleLevel >= 6) {
+      console.log('getRedirectPath: Admin user, redirecting to /admin');
+      return '/admin';
+    }
+    // Managers go to admin dashboard
+    else if (userRoleLevel >= 5) {
+      console.log('getRedirectPath: Manager user, redirecting to /admin');
+      return '/admin';
+    }
+    // Regular users go to their personal dashboard
+    else {
+      const userPath = `/${user.username}`;
+      console.log(`getRedirectPath: Regular user, redirecting to ${userPath}`);
+      return userPath;
+    }
+  };
+
   const value = {
     user,
     isAuthenticated,
     isLoading,
     login,
     logout,
+    getRedirectPath,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

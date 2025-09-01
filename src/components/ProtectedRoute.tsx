@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { useAuth } from '../contexts/MockAuthContext';
 import LoginPage from '../pages/LoginPage';
-import Header from './Header';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -38,13 +37,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <LoginPage />;
   }
 
-  // Show protected content with header if authenticated
-  return (
-    <>
-      <Header />
-      {children}
-    </>
-  );
+  // Show protected content if authenticated
+  return <>{children}</>;
 };
 
 export default ProtectedRoute; 

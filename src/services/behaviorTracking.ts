@@ -77,7 +77,7 @@ const createBehaviorData = async (action: string): Promise<UserBehaviorData> => 
 };
 
 // Determine API base URL
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002';
 
 // Send behavior data to backend (or log for now)
 const sendBehaviorData = async (data: UserBehaviorData): Promise<void> => {
@@ -129,12 +129,12 @@ const sendBehaviorData = async (data: UserBehaviorData): Promise<void> => {
 
 // Public functions for tracking different actions
 export const trackLogin = async (): Promise<void> => {
-  const data = await createBehaviorData('login');
+  const data = await createBehaviorData('user_login');
   await sendBehaviorData(data);
 };
 
 export const trackLogout = async (): Promise<void> => {
-  const data = await createBehaviorData('logout');
+  const data = await createBehaviorData('user_logout');
   await sendBehaviorData(data);
   
   // Clear session data on logout
@@ -148,7 +148,7 @@ export const trackPageView = async (page: string): Promise<void> => {
 };
 
 export const trackRecordAccess = async (recordId: string): Promise<void> => {
-  const data = await createBehaviorData(`record_access_${recordId}`);
+  const data = await createBehaviorData(`access_medical_record_${recordId}`);
   await sendBehaviorData(data);
 };
 
@@ -165,6 +165,86 @@ export const trackJITApproval = async (requestId: string, decision: 'approve' | 
 export const trackUserAction = async (action: string, details?: string): Promise<void> => {
   const actionName = details ? `${action}_${details}` : action;
   const data = await createBehaviorData(actionName);
+  await sendBehaviorData(data);
+};
+
+// Enhanced tracking functions for comprehensive user behavior monitoring
+export const trackAppointmentView = async (appointmentId: string): Promise<void> => {
+  const data = await createBehaviorData(`view_appointment_${appointmentId}`);
+  await sendBehaviorData(data);
+};
+
+export const trackAppointmentCreate = async (): Promise<void> => {
+  const data = await createBehaviorData('create_appointment');
+  await sendBehaviorData(data);
+};
+
+export const trackAppointmentUpdate = async (appointmentId: string): Promise<void> => {
+  const data = await createBehaviorData(`update_appointment_${appointmentId}`);
+  await sendBehaviorData(data);
+};
+
+export const trackPrescriptionView = async (prescriptionId: string): Promise<void> => {
+  const data = await createBehaviorData(`view_prescription_${prescriptionId}`);
+  await sendBehaviorData(data);
+};
+
+export const trackLabResultView = async (labId: string): Promise<void> => {
+  const data = await createBehaviorData(`view_lab_result_${labId}`);
+  await sendBehaviorData(data);
+};
+
+export const trackPatientSearch = async (searchTerm: string): Promise<void> => {
+  const data = await createBehaviorData(`search_patient_${searchTerm.length > 0 ? 'with_term' : 'empty'}`);
+  await sendBehaviorData(data);
+};
+
+export const trackDataExport = async (dataType: string): Promise<void> => {
+  const data = await createBehaviorData(`export_data_${dataType}`);
+  await sendBehaviorData(data);
+};
+
+export const trackAdminAction = async (action: string, target?: string): Promise<void> => {
+  const actionName = target ? `admin_${action}_${target}` : `admin_${action}`;
+  const data = await createBehaviorData(actionName);
+  await sendBehaviorData(data);
+};
+
+export const trackSecurityEvent = async (eventType: string, details?: string): Promise<void> => {
+  const actionName = details ? `security_${eventType}_${details}` : `security_${eventType}`;
+  const data = await createBehaviorData(actionName);
+  await sendBehaviorData(data);
+};
+
+export const trackSystemAccess = async (resource: string, accessType: 'read' | 'write' | 'delete' = 'read'): Promise<void> => {
+  const data = await createBehaviorData(`${accessType}_${resource}`);
+  await sendBehaviorData(data);
+};
+
+export const trackButtonClick = async (buttonName: string, context?: string): Promise<void> => {
+  const actionName = context ? `click_${buttonName}_${context}` : `click_${buttonName}`;
+  const data = await createBehaviorData(actionName);
+  await sendBehaviorData(data);
+};
+
+export const trackFormSubmission = async (formName: string, success: boolean = true): Promise<void> => {
+  const data = await createBehaviorData(`submit_${formName}_${success ? 'success' : 'failed'}`);
+  await sendBehaviorData(data);
+};
+
+export const trackNavigationChange = async (fromPage: string, toPage: string): Promise<void> => {
+  const data = await createBehaviorData(`navigate_${fromPage}_to_${toPage}`);
+  await sendBehaviorData(data);
+};
+
+export const trackFileDownload = async (fileName: string, fileType?: string): Promise<void> => {
+  const actionName = fileType ? `download_${fileType}_${fileName}` : `download_${fileName}`;
+  const data = await createBehaviorData(actionName);
+  await sendBehaviorData(data);
+};
+
+export const trackSessionActivity = async (): Promise<void> => {
+  const data = await createBehaviorData('session_activity_ping');
   await sendBehaviorData(data);
 };
 

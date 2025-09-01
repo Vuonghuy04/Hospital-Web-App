@@ -3,6 +3,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import behaviorRouter from './routes/behavior.js';
+import hospitalRouter from './routes/hospital.js';
+import riskRouter from './routes/risk.js';
 import authMiddleware from './middleware/auth.js';
 
 (async function(){
@@ -34,15 +36,26 @@ import authMiddleware from './middleware/auth.js';
     process.exit(1);
   }
 
-  const PORT = process.env.PORT || 5001;
+  const PORT = process.env.PORT || 5002;
   const app = express();
   
-  // Middleware
-  app.use(cors());
+  // Middleware - Allow both frontend ports for development
+  const allowedOrigins = [
+    'http://localhost:3000', // Hospital web app
+    'http://localhost:3001', // Admin console (if running separately)
+    'http://localhost:3002'
+  ];
+
+  app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+  }));
   app.use(express.json());
 
   // Routes
   app.use("/api/behavior-tracking", behaviorRouter);
+  app.use("/api/hospital", hospitalRouter); // Hospital admin routes
+  app.use("/api/risk", riskRouter); // Risk assessment routes
   
   // Health check endpoint
   app.get('/api/health', (req, res) => {
@@ -93,8 +106,11 @@ import authMiddleware from './middleware/auth.js';
   });
 
   const server = app.listen(PORT, () => {
+    console.log(`🏥 Hospital Web App Backend`);
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📊 Behavior API available at http://localhost:${PORT}/api/behavior-tracking`);
+    console.log(`🏥 Hospital Admin API available at http://localhost:${PORT}/api/hospital`);
+    console.log(`⚠️ Risk Assessment API available at http://localhost:${PORT}/api/risk`);
     console.log(`💊 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🗄️ Database viewer: http://localhost:${PORT}/api/database-viewer`);
   });

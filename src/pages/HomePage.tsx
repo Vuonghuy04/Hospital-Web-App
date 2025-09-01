@@ -1,16 +1,74 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { trackPageView } from '../services/behaviorTracking';
+import RedirectHandler from '../components/RedirectHandler';
+import { useAuth } from '../contexts/MockAuthContext';
 
 const HomePage = () => {
+  const { user, isAuthenticated, getRedirectPath } = useAuth();
+  const navigate = useNavigate();
+
   useEffect(() => {
     trackPageView('home');
   }, []);
 
+  // Debug function to manually trigger redirect
+  const handleManualRedirect = () => {
+    if (isAuthenticated && user) {
+      const redirectPath = getRedirectPath();
+      console.log('Manual redirect triggered:', { user: user.username, roles: user.roles, redirectPath });
+      navigate(redirectPath);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <RedirectHandler />
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* Debug Section for All Users */}
+          {isAuthenticated && user && (
+            <div className={`mb-8 p-4 border rounded-lg ${
+              user.roles?.some(role => ['admin', 'manager'].includes(role))
+                ? 'bg-red-50 border-red-200'
+                : 'bg-blue-50 border-blue-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className={`text-sm font-medium ${
+                    user.roles?.some(role => ['admin', 'manager'].includes(role))
+                      ? 'text-red-800'
+                      : 'text-blue-800'
+                  }`}>
+                    {user.roles?.some(role => ['admin', 'manager'].includes(role))
+                      ? '🛡️ Admin User Detected'
+                      : '👤 User Authenticated'}
+                  </h3>
+                  <p className={`text-sm ${
+                    user.roles?.some(role => ['admin', 'manager'].includes(role))
+                      ? 'text-red-700'
+                      : 'text-blue-700'
+                  }`}>
+                    User: {user.username} | Roles: [{user.roles.join(', ')}] | Expected redirect: {getRedirectPath()}
+                  </p>
+                </div>
+                <button 
+                  onClick={handleManualRedirect}
+                  className={`px-4 py-2 text-white rounded-md text-sm transition-colors ${
+                    user.roles?.some(role => ['admin', 'manager'].includes(role))
+                      ? 'bg-red-600 hover:bg-red-700'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {user.roles?.some(role => ['admin', 'manager'].includes(role)) 
+                    ? 'Go to Admin Panel' 
+                    : 'Go to My Dashboard'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Hero Section */}
           <div className="text-center mb-12">
             <h2 className="text-4xl font-extrabold text-gray-900 sm:text-5xl">
@@ -85,15 +143,15 @@ const HomePage = () => {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <h3 className="text-xl font-semibold text-gray-900">Admin Panel</h3>
-                    <p className="text-gray-600">Manage JIT access requests</p>
+                    <h3 className="text-xl font-semibold text-gray-900">Admin Dashboard</h3>
+                    <p className="text-gray-600">Hospital analytics and user management</p>
                   </div>
                 </div>
                 <a 
-                  href="/jit-requestable" 
+                  href="/admin/dashboard" 
                   className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200"
                 >
-                  View Requests
+                  Admin Dashboard
                   <svg className="ml-2 -mr-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
