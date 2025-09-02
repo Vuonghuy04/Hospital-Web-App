@@ -1,46 +1,70 @@
-# Getting Started with Create React App
+# Hospital Web App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A full-stack demo with React (frontend), Node/Express (backend), MongoDB (behavior tracking), and Keycloak (auth).
 
-## Available Scripts
+## Quick Start (Docker Compose)
 
-In the project directory, you can run:
+1) Create a `.env` file in the project root with your MongoDB connection string (Atlas or local):
 
-### `npm start`
+```
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster-host>/hospital_analytics?retryWrites=true&w=majority
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+2) Start the stack:
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```
+docker compose up -d --build
+```
 
-### `npm test`
+3) Open the apps:
+- Frontend: http://localhost:5173
+- Backend health: http://localhost:5050/api/health
+- Database viewer: http://localhost:5050/api/database-viewer
+- Keycloak: http://localhost:8080 (user: admin / pass: admin)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Note: If port 5000 is reserved by macOS Control Center, backend is exposed on 5050.
 
-### `npm run build`
+## MongoDB Options
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- Atlas (recommended): Use your Atlas connection string in `MONGO_URI`.
+- Local Docker Mongo: A `mongo` service is included in compose; switch backend env to `mongodb://mongo:27017/hospital_analytics` if desired.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Frontend Only (local dev)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```
+npm install
+npm start
+```
+- CRA dev server runs on http://localhost:3000
+- API base is configured in `src/services/behaviorTracking.ts` via `REACT_APP_API_BASE_URL` (defaults used in Docker Compose).
 
-### `npm run eject`
+## Backend Only (local dev)
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+```
+cd backend
+npm install
+MONGO_URI="<your-connection-string>" npm run dev
+```
+- Backend runs on http://localhost:5000 (or set `PORT`)
+- Health: `/api/health`, DB viewer: `/api/database-viewer`
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Keycloak
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+- Compose imports realm from `demo-realm.json` and starts Keycloak at http://localhost:8080
+- Frontend defaults: realm `demo`, client `demo-client`, URL `http://localhost:8080`
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## Production Frontend Image
 
-## Learn More
+A multi-stage Dockerfile builds the React app and serves it via nginx.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Build and run frontend image only:
+```
+docker build -t hospital-frontend .
+docker run -p 3000:3000 hospital-frontend
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Troubleshooting
+
+- Port 5000 in use: backend is exposed on 5050 in compose.
+- Keycloak realm import error: ensure image `quay.io/keycloak/keycloak:26.2.5` is used.
+- Mongo connection errors: verify `MONGO_URI` credentials, IP allowlist, and network access in Atlas.
