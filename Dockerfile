@@ -1,48 +1,39 @@
-# Build stage
-FROM node:18-alpine AS builder
-
+# Frontend build stage
+FROM node:20-alpine AS builder
 WORKDIR /app
+ENV NODE_ENV=production
 
-# Copy package files
+# Build-time configuration for CRA
+ARG REACT_APP_KEYCLOAK_URL=http://localhost:8080
+ARG REACT_APP_KEYCLOAK_REALM=demo
+ARG REACT_APP_KEYCLOAK_CLIENT_ID=demo-client
+ARG REACT_APP_API_BASE_URL=http://localhost:5050
+
+ENV REACT_APP_KEYCLOAK_URL=$REACT_APP_KEYCLOAK_URL \
+    REACT_APP_KEYCLOAK_REALM=$REACT_APP_KEYCLOAK_REALM \
+    REACT_APP_KEYCLOAK_CLIENT_ID=$REACT_APP_KEYCLOAK_CLIENT_ID \
+    REACT_APP_API_BASE_URL=$REACT_APP_API_BASE_URL
+
+# Install deps with better caching
 COPY package*.json ./
-
-# Install dependencies
 RUN npm ci
 
-# Copy source code
+# Build app
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
+# Production web server
+FROM nginx:1.27-alpine
 
-# Copy built application
+# Serve the production build
 COPY --from=builder /app/build /usr/share/nginx/html
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+# Minimal nginx config for SPA routing
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Create non-root user
-RUN addgroup -g 1001 -S nginx
-RUN adduser -S nginx -u 1001
-
-# Change ownership
-RUN chown -R nginx:nginx /usr/share/nginx/html
-RUN chown -R nginx:nginx /var/cache/nginx
-RUN chown -R nginx:nginx /var/log/nginx
-RUN chown -R nginx:nginx /etc/nginx/conf.d
-
-# Switch to non-root user
-USER nginx
-
-# Expose port
 EXPOSE 3000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD wget -qO- http://localhost:3000/ >/dev/null 2>&1 || exit 1
 
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
