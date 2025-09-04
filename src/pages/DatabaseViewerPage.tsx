@@ -66,7 +66,7 @@ const DatabaseViewerPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -79,7 +79,7 @@ const DatabaseViewerPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
             <div className="flex">
@@ -111,7 +111,7 @@ const DatabaseViewerPage: React.FC = () => {
 
   if (!databaseInfo) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-gray-600">No database information available</div>
         </div>
@@ -120,7 +120,7 @@ const DatabaseViewerPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-white py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
@@ -160,7 +160,7 @@ const DatabaseViewerPage: React.FC = () => {
           {databaseInfo.collections.map((collection) => (
             <div key={collection.name} className="bg-white rounded-lg shadow">
               <div
-                className="px-6 py-4 cursor-pointer hover:bg-gray-50 border-b border-gray-200"
+                className="px-6 py-4 cursor-pointer hover:bg-gray-100 border-b border-gray-200"
                 onClick={() => toggleCollection(collection.name)}
               >
                 <div className="flex items-center justify-between">

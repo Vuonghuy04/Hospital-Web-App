@@ -204,7 +204,7 @@ const AdminUsersPage = () => {
     return (
       <div className="flex min-h-screen flex-col">
         <UnifiedHeader />
-        <main className="flex-1 bg-gray-50">
+        <main className="flex-1 bg-white">
           <div className="flex items-center justify-center min-h-[80vh]">
             <div className="text-center rounded-lg border bg-card text-card-foreground shadow-sm p-8 max-w-md mx-4">
               <Shield className="h-16 w-16 mx-auto mb-6 text-destructive" />
@@ -223,7 +223,7 @@ const AdminUsersPage = () => {
     return (
       <div className="flex min-h-screen flex-col">
         <UnifiedHeader />
-        <main className="flex-1 bg-gray-50">
+        <main className="flex-1 bg-white">
           <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">

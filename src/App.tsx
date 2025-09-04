@@ -192,7 +192,7 @@ function App() {
           <Route path="/:username/prescriptions" element={
             <ProtectedRoute>
               <UserOnlyRoute>
-                <div className="min-h-screen bg-gray-50">
+                <div className="min-h-screen bg-white">
                   <UnifiedHeader />
                   <div className="max-w-4xl mx-auto p-8">
                     <div className="bg-white rounded-lg shadow p-8">
@@ -207,7 +207,7 @@ function App() {
           <Route path="/:username/lab-results" element={
             <ProtectedRoute>
               <UserOnlyRoute>
-                <div className="min-h-screen bg-gray-50">
+                <div className="min-h-screen bg-white">
                   <UnifiedHeader />
                   <div className="max-w-4xl mx-auto p-8">
                     <div className="bg-white rounded-lg shadow p-8">
@@ -222,7 +222,7 @@ function App() {
           <Route path="/:username/health" element={
             <ProtectedRoute>
               <UserOnlyRoute>
-                <div className="min-h-screen bg-gray-50">
+                <div className="min-h-screen bg-white">
                   <UnifiedHeader />
                   <div className="max-w-4xl mx-auto p-8">
                     <div className="bg-white rounded-lg shadow p-8">

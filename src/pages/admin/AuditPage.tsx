@@ -244,7 +244,7 @@ const AuditPage = () => {
 
   if (!isAuthenticated || !user || !user.roles?.some(role => ['admin', 'manager'].includes(role))) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <UnifiedHeader />
         <div className="flex items-center justify-center min-h-[80vh]">
           <div className="text-center bg-white rounded-lg shadow-lg p-8 max-w-md mx-4">
@@ -262,7 +262,7 @@ const AuditPage = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <UnifiedHeader />
-      <main className="flex-1 bg-gray-50">
+      <main className="flex-1 bg-white">
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
           {/* Header */}
           <div className="flex items-center justify-between space-y-2">

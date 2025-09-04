@@ -142,7 +142,7 @@ const AppointmentsPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <UnifiedHeader />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -238,7 +238,7 @@ const AppointmentsPage = () => {
               ))
             ) : upcomingAppointments.length > 0 ? (
               upcomingAppointments.map((appointment) => (
-                <div key={appointment.id} className="p-6 hover:bg-gray-50 transition-colors">
+                <div key={appointment.id} className="p-6 hover:bg-gray-100 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className="bg-blue-100 p-3 rounded-lg">
