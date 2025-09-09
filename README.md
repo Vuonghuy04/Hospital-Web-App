@@ -250,5 +250,3 @@ For issues and questions:
 3. Create an issue on GitHub
 
 ---
-
-**Built with ❤️ for healthcare security and management**

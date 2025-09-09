@@ -3,8 +3,6 @@
  * Manages user risk scores with consistent rules across the application
  */
 
-import mongoose from 'mongoose';
-
 // Base risk scores by role
 const BASE_RISK_SCORES = {
   admin: 30,
@@ -43,18 +41,25 @@ const SENSITIVE_PAGES = [
 /**
  * Get user's current risk score
  * @param {string} userId - User ID
+ * @param {Object} pool - PostgreSQL connection pool
  * @returns {Promise<number>} Current risk score (0-100)
  */
-export async function getUserRiskScore(userId) {
+export async function getUserRiskScore(userId, pool) {
   try {
-    // Get Log model (it's defined in routes/log.js)
-    const Log = mongoose.models.Log || mongoose.model('Log');
+    const client = await pool.connect();
     
-    // Get user's recent activity from logs
-    const recentLogs = await Log.find({
-      userId,
-      timestamp: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Last 24 hours
-    }).sort({ timestamp: -1 });
+    // Get user's recent activity from user_behavior table
+    const query = `
+      SELECT * FROM user_behavior 
+      WHERE user_id = $1 
+        AND timestamp >= NOW() - INTERVAL '24 hours'
+      ORDER BY timestamp DESC
+    `;
+    
+    const result = await client.query(query, [userId]);
+    client.release();
+    
+    const recentLogs = result.rows;
 
     if (recentLogs.length === 0) {
       return BASE_RISK_SCORES.default;
@@ -104,13 +109,11 @@ export async function calculatePageNavigationRisk(userId, page, userRoles = []) 
  * @param {string} userId - User ID
  * @param {string} action - Action performed
  * @param {Object} context - Additional context (IP, user agent, page, etc.)
+ * @param {Object} pool - PostgreSQL connection pool
  * @returns {Promise<number>} Updated risk score
  */
-export async function logActivityAndUpdateRisk(userId, action, context = {}) {
+export async function logActivityAndUpdateRisk(userId, action, context = {}, pool) {
   try {
-    // Get Log model (it's defined in routes/log.js)
-    const Log = mongoose.models.Log || mongoose.model('Log');
-    
     const { ip, userAgent, page, roles = [], success = true, forceRiskScore } = context;
     
     let finalRiskScore;
@@ -120,7 +123,7 @@ export async function logActivityAndUpdateRisk(userId, action, context = {}) {
       finalRiskScore = Math.min(100, Math.max(0, forceRiskScore));
     } else {
       // Calculate current risk score
-      const currentRisk = await getUserRiskScore(userId);
+      const currentRisk = await getUserRiskScore(userId, pool);
       
       // Calculate additional risk from this action
       let additionalRisk = 0;
@@ -150,29 +153,36 @@ export async function logActivityAndUpdateRisk(userId, action, context = {}) {
     
     const riskLevel = calculateRiskLevel(finalRiskScore);
     
-    // Log the activity (this will be stored in MongoDB)
-    const logData = {
+    // Log the activity (this will be stored in PostgreSQL)
+    const client = await pool.connect();
+    const logQuery = `
+      INSERT INTO user_behavior (
+        username, user_id, email, roles, ip_address, user_agent, 
+        action, session_id, session_period, risk_score, risk_level, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    `;
+    
+    const logValues = [
+      context.username || 'unknown',
       userId,
-      username: context.username,
-      email: context.email,
+      context.email || '',
       roles,
+      ip || 'unknown',
+      userAgent || '',
       action,
-      success,
-      ipAddress: ip,
-      userAgent,
+      context.sessionId || 'unknown',
+      context.sessionPeriod || 0,
+      finalRiskScore / 100, // Convert to 0-1 scale for storage
       riskLevel,
-      riskScore: finalRiskScore,
-      timestamp: new Date(),
-      metadata: {
+      JSON.stringify({
         page,
         additionalRisk,
         factors: getAppliedRiskFactors(context, roles, success, action)
-      }
-    };
+      })
+    ];
     
-    // Save to database
-    const log = new Log(logData);
-    await log.save();
+    await client.query(logQuery, logValues);
+    client.release();
     
     return finalRiskScore;
     
@@ -186,9 +196,10 @@ export async function logActivityAndUpdateRisk(userId, action, context = {}) {
  * Initialize user with default risk score on first login
  * @param {string} userId - User ID
  * @param {Object} userInfo - User information
+ * @param {Object} pool - PostgreSQL connection pool
  * @returns {Promise<number>} Initial risk score
  */
-export async function initializeUserRisk(userId, userInfo) {
+export async function initializeUserRisk(userId, userInfo, pool) {
   const userRole = getUserPrimaryRole(userInfo.roles || []);
   const baseScore = BASE_RISK_SCORES[userRole] || BASE_RISK_SCORES.default;
   
@@ -196,7 +207,7 @@ export async function initializeUserRisk(userId, userInfo) {
   await logActivityAndUpdateRisk(userId, 'login', {
     ...userInfo,
     success: true
-  });
+  }, pool);
   
   return baseScore;
 }
@@ -287,56 +298,44 @@ function getAppliedRiskFactors(context, roles, success, action) {
 
 /**
  * Get risk score for all users (for dashboard displays)
+ * @param {Object} pool - PostgreSQL connection pool
  * @returns {Promise<Object>} Risk score summary
  */
-export async function getAllUsersRiskSummary() {
+export async function getAllUsersRiskSummary(pool) {
   try {
-    // Get Log model (it's defined in routes/log.js)
-    const Log = mongoose.models.Log || mongoose.model('Log');
+    const client = await pool.connect();
     
-    const users = await Log.aggregate([
-      {
-        $match: {
-          username: { $exists: true, $ne: null },
-          userId: { $exists: true, $ne: null }
-        }
-      },
-      {
-        $group: {
-          _id: '$userId',
-          username: { $first: '$username' },
-          roles: { $first: '$roles' },
-          lastActivity: { $max: '$timestamp' },
-          currentRiskScore: { 
-            $avg: { 
-              $cond: [
-                { $gte: ['$timestamp', { $subtract: [new Date(), 24 * 60 * 60 * 1000] }] },
-                '$riskScore',
-                null
-              ]
-            }
-          }
-        }
-      },
-      {
-        $project: {
-          userId: '$_id',
-          username: 1,
-          roles: 1,
-          lastActivity: 1,
-          riskScore: { 
-            $ifNull: [
-              { $round: ['$currentRiskScore', 0] },
-              BASE_RISK_SCORES.default
-            ]
-          }
-        }
-      }
-    ]);
+    const query = `
+      SELECT 
+        user_id,
+        username,
+        roles,
+        MAX(timestamp) as last_activity,
+        AVG(CASE 
+          WHEN timestamp >= NOW() - INTERVAL '24 hours' 
+          THEN risk_score 
+          ELSE NULL 
+        END) as current_risk_score
+      FROM user_behavior 
+      WHERE username IS NOT NULL 
+        AND user_id IS NOT NULL
+      GROUP BY user_id, username, roles
+    `;
+    
+    const result = await client.query(query);
+    client.release();
+    
+    const users = result.rows.map(user => ({
+      userId: user.user_id,
+      username: user.username,
+      roles: user.roles,
+      lastActivity: user.last_activity,
+      riskScore: Math.round((user.current_risk_score || BASE_RISK_SCORES.default / 100) * 100)
+    }));
     
     return users;
   } catch (error) {
     console.error('Error getting users risk summary:', error);
     return [];
   }
-} 
+}

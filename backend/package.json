@@ -1,7 +1,7 @@
 {
   "name": "hospital-behavior-tracking-api",
   "version": "1.0.0",
-  "description": "Backend API for tracking user behavior and storing data in MongoDB for ML anomaly detection",
+  "description": "Backend API for tracking user behavior and storing data in PostgreSQL for ML anomaly detection",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -11,7 +11,7 @@
   },
   "keywords": [
     "behavior-tracking",
-    "mongodb",
+    "postgresql",
     "healthcare",
     "ml",
     "anomaly-detection"
@@ -20,7 +20,7 @@
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "mongoose": "^8.1.0",
+    "pg": "^8.11.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "node-fetch": "^3.3.2"

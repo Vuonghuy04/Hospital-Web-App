@@ -91,26 +91,48 @@ curl -s -X PUT http://localhost:8080/admin/realms/demo/groups/$FINANCE_GROUP_ID/
 
 echo "✅ Roles assigned to groups"
 
-# Fix admin user roles
-echo "🔧 Fixing admin user roles..."
+# Create or fix admin user
+echo "🔧 Setting up admin user..."
 
 # Get admin user ID
 ADMIN_USER_ID=$(curl -s http://localhost:8080/admin/realms/demo/users -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[] | select(.username=="admin") | .id')
 
+if [ -z "$ADMIN_USER_ID" ]; then
+  echo "👤 Creating admin user..."
+  # Create admin user
+  curl -s -X POST http://localhost:8080/admin/realms/demo/users \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "User",
+      "email": "admin@hospital.com",
+      "credentials": [{"type": "password", "value": "admin", "temporary": false}],
+      "groups": ["/Hospital Side"],
+      "attributes": {"department": ["Administration"], "position": ["Admin"]}
+    }' > /dev/null
+  
+  # Get the newly created admin user ID
+  ADMIN_USER_ID=$(curl -s http://localhost:8080/admin/realms/demo/users -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[] | select(.username=="admin") | .id')
+  echo "✅ Admin user created"
+else
+  echo "✅ Admin user already exists"
+fi
+
 if [ -n "$ADMIN_USER_ID" ]; then
-  # Get admin role ID
-  ADMIN_ROLE_ID=$(curl -s http://localhost:8080/admin/realms/demo/roles/admin -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.id')
+  # Enable direct access grants for demo-client
+  echo "🔧 Enabling direct access grants for demo-client..."
+  CLIENT_ID=$(curl -s http://localhost:8080/admin/realms/demo/clients -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[] | select(.clientId=="demo-client") | .id')
+  curl -s -X PUT http://localhost:8080/admin/realms/demo/clients/$CLIENT_ID \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"directAccessGrantsEnabled": true}' > /dev/null
+  echo "✅ Direct access grants enabled"
   
-  if [ -n "$ADMIN_ROLE_ID" ]; then
-    # Assign admin role to admin user
-    curl -s -X POST http://localhost:8080/admin/realms/demo/users/$ADMIN_USER_ID/role-mappings/realm \
-      -H "Authorization: Bearer $ADMIN_TOKEN" \
-      -H "Content-Type: application/json" \
-      -d "[{\"id\": \"$ADMIN_ROLE_ID\", \"name\": \"admin\"}]" > /dev/null
-    echo "✅ Admin role assigned to admin user"
-  fi
-  
-  # Also assign manager role for broader access
+  # Assign manager role to admin user (since there's no admin role in demo realm)
   MANAGER_ROLE_ID=$(curl -s http://localhost:8080/admin/realms/demo/roles/manager -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.id')
   
   if [ -n "$MANAGER_ROLE_ID" ]; then
@@ -121,7 +143,7 @@ if [ -n "$ADMIN_USER_ID" ]; then
     echo "✅ Manager role assigned to admin user"
   fi
 else
-  echo "⚠️ Admin user not found, skipping role assignment"
+  echo "❌ Failed to create or find admin user"
 fi
 
 # Create users

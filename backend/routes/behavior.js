@@ -22,24 +22,24 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Create new behavior record using Mongoose
-    const behavior = new Behavior(behaviorData);
-    const savedBehavior = await behavior.save();
+    // Create new behavior record using PostgreSQL
+    const behavior = new Behavior(req.app.locals.pool);
+    const savedBehavior = await behavior.create(behaviorData);
     
     console.log(`📊 Behavior tracked: ${behaviorData.username} - ${behaviorData.action}`);
     
     res.status(201).json({
       message: 'Behavior data stored successfully',
-      id: savedBehavior._id,
+      id: savedBehavior.id,
       data: savedBehavior
     });
 
   } catch (error) {
     console.error('Error storing behavior data:', error);
     
-    if (error.name === 'ValidationError') {
+    if (error.code === '23505') { // Unique constraint violation
       return res.status(400).json({ 
-        error: 'Validation failed',
+        error: 'Duplicate entry',
         details: error.message
       });
     }
@@ -65,23 +65,18 @@ router.get('/', async (req, res) => {
     const filter = {};
     if (username) filter.username = username;
     if (riskLevel) filter.riskLevel = riskLevel;
-    if (action) filter.action = { $regex: action, $options: 'i' }; // Case insensitive search
-    
-    if (startDate || endDate) {
-      filter.timestamp = {};
-      if (startDate) filter.timestamp.$gte = new Date(startDate);
-      if (endDate) filter.timestamp.$lte = new Date(endDate);
-    }
+    if (action) filter.action = action;
+    if (startDate) filter.startDate = new Date(startDate);
+    if (endDate) filter.endDate = new Date(endDate);
 
-    // Query with Mongoose
-    const behaviorData = await Behavior
-      .find(filter)
-      .sort({ timestamp: -1 })
-      .limit(parseInt(limit))
-      .skip(parseInt(skip))
-      .lean(); // Return plain objects for better performance
+    // Query with PostgreSQL
+    const behavior = new Behavior(req.app.locals.pool);
+    const behaviorData = await behavior.find(filter, {
+      limit: parseInt(limit),
+      skip: parseInt(skip)
+    });
 
-    const totalCount = await Behavior.countDocuments(filter);
+    const totalCount = await behavior.count(filter);
 
     res.json({
       data: behaviorData,
@@ -106,92 +101,29 @@ router.get('/analytics', async (req, res) => {
   try {
     const { username, days = 7 } = req.query;
     
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - parseInt(days));
-    
-    const matchFilter = { timestamp: { $gte: startDate } };
+    const matchFilter = {};
     if (username) matchFilter.username = username;
 
-    // Use Mongoose aggregation pipeline
-    const analytics = await Behavior.aggregate([
-      { $match: matchFilter },
-      {
-        $group: {
-          _id: null,
-          totalEvents: { $sum: 1 },
-          uniqueUsers: { $addToSet: '$username' },
-          avgRiskScore: { $avg: '$riskScore' },
-          riskLevels: { $push: '$riskLevel' },
-          actions: { $push: '$action' },
-          sessionIds: { $addToSet: '$sessionId' }
-        }
-      },
-      {
-        $project: {
-          totalEvents: 1,
-          uniqueUserCount: { $size: '$uniqueUsers' },
-          uniqueSessionCount: { $size: '$sessionIds' },
-          avgRiskScore: { $round: ['$avgRiskScore', 3] },
-          riskDistribution: {
-            low: {
-              $size: {
-                $filter: {
-                  input: '$riskLevels',
-                  cond: { $eq: ['$$this', 'low'] }
-                }
-              }
-            },
-            medium: {
-              $size: {
-                $filter: {
-                  input: '$riskLevels',
-                  cond: { $eq: ['$$this', 'medium'] }
-                }
-              }
-            },
-            high: {
-              $size: {
-                $filter: {
-                  input: '$riskLevels',
-                  cond: { $eq: ['$$this', 'high'] }
-                }
-              }
-            }
-          },
-          topActions: {
-            $slice: [
-              {
-                $map: {
-                  input: { $setUnion: ['$actions'] },
-                  as: 'action',
-                  in: {
-                    action: '$$action',
-                    count: {
-                      $size: {
-                        $filter: {
-                          input: '$actions',
-                          cond: { $eq: ['$$this', '$$action'] }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              10
-            ]
-          }
-        }
-      }
-    ]);
+    // Use PostgreSQL aggregation
+    const behavior = new Behavior(req.app.locals.pool);
+    const analytics = await behavior.getAnalytics(matchFilter, parseInt(days));
+    const topActions = await behavior.getTopActions(matchFilter, parseInt(days), 10);
     
     res.json({
-      analytics: analytics[0] || {
-        totalEvents: 0,
-        uniqueUserCount: 0,
-        uniqueSessionCount: 0,
-        avgRiskScore: 0,
-        riskDistribution: { low: 0, medium: 0, high: 0 },
-        topActions: []
+      analytics: {
+        totalEvents: parseInt(analytics.total_events) || 0,
+        uniqueUserCount: parseInt(analytics.unique_user_count) || 0,
+        uniqueSessionCount: parseInt(analytics.unique_session_count) || 0,
+        avgRiskScore: parseFloat(analytics.avg_risk_score) || 0,
+        riskDistribution: {
+          low: parseInt(analytics.low_risk_count) || 0,
+          medium: parseInt(analytics.medium_risk_count) || 0,
+          high: parseInt(analytics.high_risk_count) || 0
+        },
+        topActions: topActions.map(action => ({
+          action: action.action,
+          count: parseInt(action.count)
+        }))
       },
       period: `Last ${days} days`,
       generatedAt: new Date().toISOString()
@@ -217,7 +149,8 @@ router.delete('/', async (req, res) => {
     }
     
     const filter = username ? { username } : {};
-    const result = await Behavior.deleteMany(filter);
+    const behavior = new Behavior(req.app.locals.pool);
+    const result = await behavior.deleteMany(filter);
     
     console.log(`🗑️ Deleted ${result.deletedCount} behavior records`);
     
@@ -236,18 +169,19 @@ router.delete('/', async (req, res) => {
 // GET /stats - Quick statistics
 router.get('/stats', async (req, res) => {
   try {
-    const totalRecords = await Behavior.countDocuments();
-    const latestRecord = await Behavior.findOne().sort({ timestamp: -1 });
-    const uniqueUsers = await Behavior.distinct('username');
-    const uniqueSessions = await Behavior.distinct('sessionId');
+    const behavior = new Behavior(req.app.locals.pool);
+    const totalRecords = await behavior.count();
+    const behaviorData = await behavior.find({}, { limit: 1 });
+    const uniqueUsers = await behavior.distinct('username');
+    const uniqueSessions = await behavior.distinct('session_id');
     
     res.json({
       totalRecords,
       uniqueUsers: uniqueUsers.length,
       uniqueSessions: uniqueSessions.length,
-      latestRecord,
-      collectionName: Behavior.collection.name,
-      databaseName: Behavior.db.name
+      latestRecord: behaviorData[0] || null,
+      tableName: 'user_behavior',
+      databaseName: 'hospital_analytics'
     });
     
   } catch (error) {
@@ -256,4 +190,4 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-export default router; 
+export default router;

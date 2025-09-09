@@ -10,7 +10,9 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5002
-      - MONGO_URI=mongodb+srv://vqh04092004:admin@cluster0.nnhndae.mongodb.net/hospital_analytics
+      - DATABASE_URL=postgresql://hospital_user:hospital_password@postgres:5432/hospital_analytics
+    depends_on:
+      - postgres
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:5002/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
@@ -31,6 +33,20 @@ services:
     command: start-dev --import-realm
     volumes:
       - ./demo-realm.json:/opt/keycloak/data/import/demo-realm.json
+    restart: unless-stopped
+
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: hospital-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=hospital_analytics
+      - POSTGRES_USER=hospital_user
+      - POSTGRES_PASSWORD=hospital_password
+    volumes:
+      - hospital_data:/var/lib/postgresql/data
     restart: unless-stopped
 
   # Frontend React Service
