@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/MockAuthContext';
 import { trackPageView, trackRecordAccess, trackButtonClick } from '../../services/behaviorTracking';
 import UnifiedHeader from '../../components/UnifiedHeader';
+import JITAccessGuard from '../../components/JITAccessGuard';
+import JITRequestModal from '../../components/JITRequestModal';
 import { 
   FileText, 
   Calendar, 
@@ -11,7 +13,10 @@ import {
   Activity,
   Download,
   Eye,
-  Lock
+  Lock,
+  Edit,
+  Plus,
+  Shield
 } from 'lucide-react';
 
 interface MedicalRecord {
@@ -28,6 +33,9 @@ const MedicalRecordsPage = () => {
   const { user } = useAuth();
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
+  const [showJITModal, setShowJITModal] = useState(false);
 
   useEffect(() => {
     trackPageView('medical_records');
@@ -109,11 +117,65 @@ const MedicalRecordsPage = () => {
     return `inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colors[status as keyof typeof colors]}`;
   };
 
+  const handleEditRequest = (record: MedicalRecord) => {
+    // Check if user has edit permissions
+    const userRoles = user?.roles || [];
+    const isDoctor = userRoles.includes('doctor');
+    const isAdmin = userRoles.includes('admin') || userRoles.includes('manager');
+    
+    if (isDoctor || isAdmin) {
+      // User has edit permissions - show edit modal
+      setSelectedRecord(record);
+      setShowEditModal(true);
+    } else {
+      // User needs JIT approval for edit access
+      setSelectedRecord(record);
+      setShowJITModal(true);
+    }
+  };
+
+  const handleJITRequestSubmitted = (request: any) => {
+    console.log('JIT edit request submitted:', request);
+    setShowJITModal(false);
+    setSelectedRecord(null);
+  };
+
+  const handleAddNewRecord = () => {
+    // Check if user has add permissions
+    const userRoles = user?.roles || [];
+    const isDoctor = userRoles.includes('doctor');
+    const isAdmin = userRoles.includes('admin') || userRoles.includes('manager');
+    
+    if (isDoctor || isAdmin) {
+      // User has add permissions - show add modal
+      alert('Add new record functionality - Coming soon!');
+    } else {
+      // User needs JIT approval for add access
+      setSelectedRecord({
+        id: 'new',
+        date: new Date().toISOString().split('T')[0],
+        type: 'consultation',
+        title: 'New Medical Record',
+        doctor: user?.username || 'Unknown',
+        summary: 'New record to be created',
+        status: 'pending'
+      });
+      setShowJITModal(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <UnifiedHeader />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <JITAccessGuard
+        resourceType="patient_record"
+        resourceId={`patient-${user?.username}`}
+        resourceName={`Medical Records for ${user?.username}`}
+        requiredRole="doctor"
+        requiredAction="read"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-2">
@@ -152,10 +214,21 @@ const MedicalRecordsPage = () => {
         {/* Records List */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Recent Medical Records</h2>
-            <p className="text-gray-600 mt-1">
-              Showing {records.length} records - Only you and your healthcare providers can access this information
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Recent Medical Records</h2>
+                <p className="text-gray-600 mt-1">
+                  Showing {records.length} records - Only you and your healthcare providers can access this information
+                </p>
+              </div>
+              <button
+                onClick={handleAddNewRecord}
+                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Record</span>
+              </button>
+            </div>
           </div>
 
           <div className="divide-y divide-gray-200">
@@ -200,8 +273,8 @@ const MedicalRecordsPage = () => {
                       </span>
                       <button 
                         onClick={() => {
-                          trackRecordAccess(`consultation-${consultation.id}`);
-                          trackButtonClick('view_consultation', 'medical_records');
+                          trackRecordAccess(`record-${record.id}`);
+                          trackButtonClick('view_record', 'medical_records');
                         }}
                         className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >
@@ -209,8 +282,15 @@ const MedicalRecordsPage = () => {
                         <span>View</span>
                       </button>
                       <button 
+                        onClick={() => handleEditRequest(record)}
+                        className="flex items-center space-x-1 text-green-600 hover:text-green-800 text-sm font-medium"
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span>Edit</span>
+                      </button>
+                      <button 
                         onClick={() => {
-                          trackButtonClick('download_consultation', 'medical_records');
+                          trackButtonClick('download_record', 'medical_records');
                         }}
                         className="flex items-center space-x-1 text-gray-600 hover:text-gray-800 text-sm font-medium"
                       >
@@ -244,7 +324,104 @@ const MedicalRecordsPage = () => {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+
+        {/* JIT Request Modal for Edit Access */}
+        {showJITModal && selectedRecord && (
+          <JITRequestModal
+            isOpen={showJITModal}
+            onClose={() => {
+              setShowJITModal(false);
+              setSelectedRecord(null);
+            }}
+            resourceType="patient_record"
+            resourceId={`patient-${user?.username}`}
+            resourceName={`Edit Medical Record: ${selectedRecord.title}`}
+            onRequestSubmitted={handleJITRequestSubmitted}
+          />
+        )}
+
+        {/* Edit Modal (for users with edit permissions) */}
+        {showEditModal && selectedRecord && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <Edit className="h-6 w-6 text-green-500" />
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Edit Medical Record
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedRecord(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <Eye className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Record Title
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedRecord.title}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      readOnly
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Summary
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={selectedRecord.summary}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter record summary..."
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 text-sm text-green-600">
+                    <Shield className="h-4 w-4" />
+                    <span>You have edit permissions for this record</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setSelectedRecord(null);
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      alert('Record updated successfully! (This is a demo)');
+                      setShowEditModal(false);
+                      setSelectedRecord(null);
+                    }}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </JITAccessGuard>
     </div>
   );
 };

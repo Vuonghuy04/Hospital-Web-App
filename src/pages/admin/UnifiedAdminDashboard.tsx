@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/MockAuthContext';
 import { trackPageView } from '../../services/behaviorTracking';
 import UnifiedHeader from '../../components/UnifiedHeader';
+import JITApprovalPanel from '../../components/JITApprovalPanel';
+import PolicyViolationsPanel from '../../components/PolicyViolationsPanel';
 import { 
   Shield, 
   Users, 
@@ -13,7 +15,10 @@ import {
   Clock,
   Target,
   Brain,
-  Zap
+  Zap,
+  CheckCircle,
+  FileText,
+  Lock
 } from 'lucide-react';
 
 // Types
@@ -64,6 +69,7 @@ const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002';
 const UnifiedAdminDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
   
   // Dashboard data
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics>({
@@ -84,6 +90,15 @@ const UnifiedAdminDashboard = () => {
   
   // Risk assessment data
   const [assessments, setAssessments] = useState<RiskAssessment[]>([]);
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'activity', label: 'User Activity', icon: Activity },
+    { id: 'analytics', label: 'Analytics', icon: Brain },
+    { id: 'risk', label: 'Risk Assessment', icon: Target },
+    { id: 'jit-approvals', label: 'JIT Approvals', icon: CheckCircle },
+    { id: 'policy-violations', label: 'Policy Violations', icon: AlertTriangle }
+  ];
 
   useEffect(() => {
     trackPageView('unified_admin_dashboard');
@@ -624,6 +639,29 @@ const UnifiedAdminDashboard = () => {
             </div>
           </div>
 
+          {/* Tabs */}
+          <div className="border-b border-gray-200 mb-8">
+            <nav className="-mb-px flex space-x-8">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                      activeTab === tab.id
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
           {/* Content */}
           {loading ? (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -633,7 +671,14 @@ const UnifiedAdminDashboard = () => {
               </div>
             </div>
           ) : (
-            renderDashboard()
+            <div className="space-y-6">
+              {activeTab === 'overview' && renderDashboard()}
+              {activeTab === 'activity' && renderUserActivity()}
+              {activeTab === 'analytics' && renderAnalytics()}
+              {activeTab === 'risk' && renderRiskAssessment()}
+              {activeTab === 'jit-approvals' && <JITApprovalPanel />}
+              {activeTab === 'policy-violations' && <PolicyViolationsPanel />}
+            </div>
           )}
         </div>
       </main>

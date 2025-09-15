@@ -3,6 +3,7 @@ import HomePage from './pages/HomePage';
 import RecordPage from './pages/RecordPage';
 import JITRequestPage from './pages/JITRequestPage';
 import JITRequestable from './pages/JITRequestable';
+import JITDemoPage from './pages/JITDemoPage';
 import DatabaseViewerPage from './pages/DatabaseViewerPage';
 import { AuthProvider } from './contexts/MockAuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -27,6 +28,8 @@ import AuditPage from './pages/admin/AuditPage';
 import UserOnlyRoute from './components/UserOnlyRoute';
 import MedicalRecordsPage from './pages/user/MedicalRecordsPage';
 import AppointmentsPage from './pages/user/AppointmentsPage';
+import PrescriptionsPage from './pages/user/PrescriptionsPage';
+import FinancialDataPage from './pages/user/FinancialDataPage';
 import UnifiedHeader from './components/UnifiedHeader';
 
 function App() {
@@ -53,6 +56,11 @@ function App() {
           <Route path="/jit-requestable" element={
             <ProtectedRoute>
               <JITRequestable />
+            </ProtectedRoute>
+          } />
+          <Route path="/jit-demo" element={
+            <ProtectedRoute>
+              <JITDemoPage />
             </ProtectedRoute>
           } />
           <Route path="/database" element={
@@ -192,15 +200,14 @@ function App() {
           <Route path="/:username/prescriptions" element={
             <ProtectedRoute>
               <UserOnlyRoute>
-                <div className="min-h-screen bg-white">
-                  <UnifiedHeader />
-                  <div className="max-w-4xl mx-auto p-8">
-                    <div className="bg-white rounded-lg shadow p-8">
-                      <h1 className="text-2xl font-bold text-gray-900 mb-4">My Prescriptions</h1>
-                      <p className="text-gray-600">Your prescription management system - Coming Soon</p>
-                    </div>
-                  </div>
-                </div>
+                <PrescriptionsPage />
+              </UserOnlyRoute>
+            </ProtectedRoute>
+          } />
+          <Route path="/:username/financial" element={
+            <ProtectedRoute>
+              <UserOnlyRoute>
+                <FinancialDataPage />
               </UserOnlyRoute>
             </ProtectedRoute>
           } />
