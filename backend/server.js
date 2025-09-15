@@ -5,6 +5,7 @@ import cors from 'cors';
 import behaviorRouter from './routes/behavior.js';
 import hospitalRouter from './routes/hospital.js';
 import riskRouter from './routes/risk.js';
+import jitRouter from './routes/jit.js';
 import authMiddleware from './middleware/auth.js';
 
 const { Pool } = pkg;
@@ -119,6 +120,7 @@ const { Pool } = pkg;
   app.use("/api/behavior-tracking", behaviorRouter);
   app.use("/api/hospital", hospitalRouter); // Hospital admin routes
   app.use("/api/risk", riskRouter); // Risk assessment routes
+  app.use("/api/jit", jitRouter); // JIT access control routes
   
   // Root endpoint for quick checks
   app.get('/', (req, res) => {

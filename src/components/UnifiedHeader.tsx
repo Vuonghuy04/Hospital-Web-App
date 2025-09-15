@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/MockAuthContext';
 import { trackButtonClick, trackNavigationChange, trackLogout } from '../services/behaviorTracking';
+import JITNotificationCenter from './JITNotificationCenter';
 import { 
   Hospital, 
   Home, 
@@ -46,6 +47,7 @@ const UnifiedHeader = () => {
     { name: 'Appointments', path: `/${user?.username}/appointments`, icon: Calendar },
     { name: 'Prescriptions', path: `/${user?.username}/prescriptions`, icon: Pill },
     { name: 'Lab Results', path: `/${user?.username}/lab-results`, icon: ClipboardList },
+    { name: 'Financial', path: `/${user?.username}/financial`, icon: Database },
   ];
 
   const navigationItems = isAdmin ? adminNavItems : userNavItems;
@@ -85,6 +87,9 @@ const UnifiedHeader = () => {
           <div className="flex items-center space-x-4">
             {isAuthenticated && user ? (
               <>
+                {/* JIT Notifications */}
+                <JITNotificationCenter />
+                
                 {/* User Info */}
                 <div className="hidden md:flex items-center space-x-3">
                   <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
