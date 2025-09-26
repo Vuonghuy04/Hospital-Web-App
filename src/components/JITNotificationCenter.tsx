@@ -38,6 +38,8 @@ interface PolicyViolation {
   created_at: string;
 }
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002';
+
 const JITNotificationCenter: React.FC = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -51,12 +53,23 @@ const JITNotificationCenter: React.FC = () => {
       setLoading(true);
       const notifications = [];
 
+      // Debug logging
+      console.log('🔔 JIT Notifications - Current user:', user);
+      console.log('🔔 JIT Notifications - User roles:', user.roles);
+      console.log('🔔 JIT Notifications - Is admin?', user.roles?.includes('admin'));
+      console.log('🔔 JIT Notifications - Is manager?', user.roles?.includes('manager'));
+      console.log('🔔 JIT Notifications - Is doctor?', user.roles?.includes('doctor'));
+
       // Check if user is admin/manager - show pending approvals
       if (user.roles?.includes('admin') || user.roles?.includes('manager') || user.roles?.includes('doctor')) {
-        const response = await fetch('http://localhost:5002/api/jit?status=pending&limit=10');
+        console.log('🔔 Fetching pending JIT requests for admin/manager/doctor...');
+        const response = await fetch(`${API_BASE_URL}/api/jit?status=pending&limit=10`);
         const data = await response.json();
         
+        console.log('🔔 JIT API Response:', data);
+        
         if (data.success) {
+          console.log('🔔 Found', data.data.length, 'pending JIT requests');
           data.data.forEach((request: JITRequest) => {
             notifications.push({
               id: `request-${request.id}`,
@@ -68,15 +81,21 @@ const JITNotificationCenter: React.FC = () => {
               severity: 'medium'
             });
           });
+        } else {
+          console.log('🔔 JIT API failed:', data.error);
         }
       }
 
       // Check for policy violations (admin only)
       if (user.roles?.includes('admin')) {
-        const violationsResponse = await fetch('http://localhost:5002/api/jit/violations?status=open&limit=5');
+        console.log('🔔 Fetching policy violations for admin...');
+        const violationsResponse = await fetch(`${API_BASE_URL}/api/jit/violations?status=open&limit=5`);
         const violationsData = await violationsResponse.json();
         
+        console.log('🔔 Policy violations response:', violationsData);
+        
         if (violationsData.success) {
+          console.log('🔔 Found', violationsData.data.length, 'policy violations');
           violationsData.data.forEach((violation: PolicyViolation) => {
             notifications.push({
               id: `violation-${violation.id}`,
@@ -88,14 +107,20 @@ const JITNotificationCenter: React.FC = () => {
               severity: violation.severity
             });
           });
+        } else {
+          console.log('🔔 Policy violations API failed:', violationsData.error);
         }
       }
 
       // Check user's own requests status
-      const myRequestsResponse = await fetch(`http://localhost:5002/api/jit?requesterId=${user.username}&status=approved&limit=5`);
+      console.log('🔔 Fetching user own requests...');
+      const myRequestsResponse = await fetch(`${API_BASE_URL}/api/jit?requesterId=${user.username}&status=approved&limit=5`);
       const myRequestsData = await myRequestsResponse.json();
       
+      console.log('🔔 User requests response:', myRequestsData);
+      
       if (myRequestsData.success) {
+        console.log('🔔 Found', myRequestsData.data.length, 'user requests');
         myRequestsData.data.forEach((request: JITRequest) => {
           notifications.push({
             id: `my-request-${request.id}`,
@@ -107,11 +132,14 @@ const JITNotificationCenter: React.FC = () => {
             severity: 'low'
           });
         });
+      } else {
+        console.log('🔔 User requests API failed:', myRequestsData.error);
       }
 
+      console.log('🔔 Total notifications found:', notifications.length);
       setNotifications(notifications.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      console.error('🔔 Failed to fetch notifications:', error);
     } finally {
       setLoading(false);
     }
@@ -199,7 +227,10 @@ const JITNotificationCenter: React.FC = () => {
 
   const unreadCount = notifications.filter(n => n.severity === 'medium' || n.severity === 'high' || n.severity === 'critical').length;
 
+  console.log('🔔 JITNotificationCenter render - Loading:', loading, 'User:', user, 'Notifications:', notifications.length);
+
   if (loading) {
+    console.log('🔔 JITNotificationCenter - Rendering loading state');
     return (
       <div className="relative">
         <button className="p-2 text-gray-400 hover:text-gray-600">
@@ -208,6 +239,8 @@ const JITNotificationCenter: React.FC = () => {
       </div>
     );
   }
+
+  console.log('🔔 JITNotificationCenter - Rendering main state, unreadCount:', unreadCount);
 
   return (
     <div className="relative">

@@ -30,6 +30,10 @@ const UnifiedHeader = () => {
   };
 
   const isAdmin = user?.roles?.some(role => ['admin', 'manager'].includes(role));
+  
+  console.log('🔧 UnifiedHeader - User:', user);
+  console.log('🔧 UnifiedHeader - IsAuthenticated:', isAuthenticated);
+  console.log('🔧 UnifiedHeader - IsAdmin:', isAdmin);
 
   // Admin navigation items
   const adminNavItems = [
@@ -88,6 +92,7 @@ const UnifiedHeader = () => {
             {isAuthenticated && user ? (
               <>
                 {/* JIT Notifications */}
+                {console.log('🔧 UnifiedHeader - About to render JITNotificationCenter')}
                 <JITNotificationCenter />
                 
                 {/* User Info */}

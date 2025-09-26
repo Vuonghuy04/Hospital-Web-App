@@ -102,9 +102,9 @@ const sendBehaviorData = async (data: UserBehaviorData): Promise<void> => {
     
     localStorage.setItem('hospital_behavior_data', JSON.stringify(existingData));
 
-    // Send to backend API
+    // Send to backend API with ML risk prediction
     try {
-      const response = await fetch(`${API_BASE_URL}/api/behavior-tracking`, {
+      const response = await fetch(`${API_BASE_URL}/api/ml-risk/behavior`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,12 +114,51 @@ const sendBehaviorData = async (data: UserBehaviorData): Promise<void> => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Behavior data sent to backend:', result.message);
+        console.log('✅ Behavior data sent with ML prediction:', {
+          message: result.message,
+          riskScore: result.riskScore,
+          riskLevel: result.riskLevel,
+          mlPrediction: result.mlPrediction
+        });
       } else {
         console.error('❌ Failed to send behavior data:', response.status, response.statusText);
+        
+        // Fallback to regular behavior tracking if ML service is unavailable
+        try {
+          const fallbackResponse = await fetch(`${API_BASE_URL}/api/behavior-tracking`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+          });
+          
+          if (fallbackResponse.ok) {
+            console.log('✅ Behavior data sent via fallback endpoint');
+          }
+        } catch (fallbackError) {
+          console.error('❌ Fallback API also failed:', fallbackError);
+        }
       }
     } catch (apiError) {
       console.error('❌ API Error sending behavior data:', apiError);
+      
+      // Fallback to regular behavior tracking if ML service is unavailable
+      try {
+        const fallbackResponse = await fetch(`${API_BASE_URL}/api/behavior-tracking`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+        
+        if (fallbackResponse.ok) {
+          console.log('✅ Behavior data sent via fallback endpoint');
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback API also failed:', fallbackError);
+      }
     }
     
   } catch (error) {

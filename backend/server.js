@@ -6,6 +6,7 @@ import behaviorRouter from './routes/behavior.js';
 import hospitalRouter from './routes/hospital.js';
 import riskRouter from './routes/risk.js';
 import jitRouter from './routes/jit.js';
+import mlRiskRouter from './routes/ml-risk.js';
 import authMiddleware from './middleware/auth.js';
 
 const { Pool } = pkg;
@@ -121,6 +122,7 @@ const { Pool } = pkg;
   app.use("/api/hospital", hospitalRouter); // Hospital admin routes
   app.use("/api/risk", riskRouter); // Risk assessment routes
   app.use("/api/jit", jitRouter); // JIT access control routes
+  app.use("/api/ml-risk", mlRiskRouter); // ML-based risk prediction routes
   
   // Root endpoint for quick checks
   app.get('/', (req, res) => {
@@ -201,18 +203,28 @@ const { Pool } = pkg;
     }
   });
 
-  const server = app.listen(PORT, () => {
+  const server = app.listen(PORT, async () => {
     console.log(`🏥 Hospital Web App Backend`);
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📊 Behavior API available at http://localhost:${PORT}/api/behavior-tracking`);
     console.log(`🏥 Hospital Admin API available at http://localhost:${PORT}/api/hospital`);
     console.log(`⚠️ Risk Assessment API available at http://localhost:${PORT}/api/risk`);
+    console.log(`🤖 ML Risk Prediction API available at http://localhost:${PORT}/api/ml-risk`);
     console.log(`💊 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🗄️ Database viewer: http://localhost:${PORT}/api/database-viewer`);
+    console.log(`🐍 Python ML Service: ${process.env.PYTHON_ML_SERVICE_URL || 'http://localhost:5001'}`);
   });
 
   // Graceful shutdown
   process.on('SIGTERM', () => {
+    console.log('🔄 Shutting down gracefully...');
+    server.close(() => {
+      pool.end();
+      process.exit(0);
+    });
+  });
+
+  process.on('SIGINT', () => {
     console.log('🔄 Shutting down gracefully...');
     server.close(() => {
       pool.end();

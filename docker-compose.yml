@@ -1,4 +1,23 @@
 services:
+  # Python ML Service
+  ml-service:
+    build:
+      context: .
+      dockerfile: ml-service/Dockerfile
+    container_name: hospital-ml-service
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=production
+      - PORT=5001
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5001/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   # Backend API Service
   backend:
     build: 
@@ -11,8 +30,10 @@ services:
       - NODE_ENV=production
       - PORT=5002
       - DATABASE_URL=postgresql://hospital_user:hospital_password@postgres:5432/hospital_analytics
+      - PYTHON_ML_SERVICE_URL=http://ml-service:5001
     depends_on:
       - postgres
+      - ml-service
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:5002/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]

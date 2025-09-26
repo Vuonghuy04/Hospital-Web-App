@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/MockAuthContext';
-import { trackPageView } from '../../services/behaviorTracking';
-import UnifiedHeader from '../../components/UnifiedHeader';
+import { useNavigate } from 'react-router-dom';
+import { trackPageView, trackButtonClick, trackLogout, getBehaviorData, clearBehaviorData } from '../../services/behaviorTracking';
 import JITApprovalPanel from '../../components/JITApprovalPanel';
 import PolicyViolationsPanel from '../../components/PolicyViolationsPanel';
+import MLRiskDashboard from '../../components/MLRiskDashboard';
+import UnifiedHeader from '../../components/UnifiedHeader';
 import { 
   Shield, 
   Users, 
@@ -18,7 +20,7 @@ import {
   Zap,
   CheckCircle,
   FileText,
-  Lock
+  Lock,
 } from 'lucide-react';
 
 // Types
@@ -32,6 +34,25 @@ interface UserActivity {
   userAgent: string;
   status: 'success' | 'failed' | 'warning';
   riskLevel: 'low' | 'medium' | 'high';
+}
+
+interface BehaviorData {
+  username: string;
+  userId: string;
+  email: string;
+  roles: string[];
+  ipAddress: string;
+  userAgent: string;
+  timestamp: Date;
+  action: string;
+  sessionId: string;
+  sessionPeriod: number;
+  riskScore: number;
+  metadata: {
+    realm: string;
+    clientId: string;
+    tokenType: string;
+  };
 }
 
 interface BehaviorPattern {
@@ -65,9 +86,11 @@ interface DashboardMetrics {
 }
 
 const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002';
 
 const UnifiedAdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   
@@ -90,6 +113,9 @@ const UnifiedAdminDashboard = () => {
   
   // Risk assessment data
   const [assessments, setAssessments] = useState<RiskAssessment[]>([]);
+  
+  // Behavior analytics data
+  const [behaviorData, setBehaviorData] = useState<BehaviorData[]>([]);
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -103,6 +129,13 @@ const UnifiedAdminDashboard = () => {
   useEffect(() => {
     trackPageView('unified_admin_dashboard');
   }, []);
+
+  // Load behavior data when activity tab is selected
+  useEffect(() => {
+    if (activeTab === 'activity') {
+      refreshBehaviorData();
+    }
+  }, [activeTab]);
 
   // Generate mock data
   const generateMockData = () => {
@@ -189,7 +222,7 @@ const UnifiedAdminDashboard = () => {
 
 
   // Helper functions
-  const formatTimestamp = (timestamp: string) => {
+  const formatTimestamp = (timestamp: string | Date) => {
     return new Date(timestamp).toLocaleString();
   };
 
@@ -290,255 +323,206 @@ const UnifiedAdminDashboard = () => {
     </div>
   );
 
-  const renderUserActivity = () => (
-    <div className="space-y-6">
-      {/* Controls */}
-      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-300" />
-              <input
-                type="text"
-                placeholder="Search users, actions, resources..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+  // Behavior analytics functions
+  const refreshBehaviorData = async () => {
+    try {
+      // Fetch behavior data from backend API instead of localStorage
+      const response = await fetch(`${API_BASE_URL}/api/behavior-tracking?limit=100`);
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Backend API response:', result);
+        // Transform the backend data to match our interface
+        const transformedData = result.data.map(record => {
+          const riskScore = typeof record.risk_score === 'number' ? record.risk_score : parseFloat(record.risk_score) || 0;
+          console.log('Transforming record:', record.username, 'risk_score:', record.risk_score, 'parsed:', riskScore);
+          return {
+          username: record.username,
+          userId: record.user_id,
+          email: record.email,
+          roles: record.roles || [],
+          ipAddress: record.ip_address,
+          userAgent: record.user_agent,
+          timestamp: new Date(record.timestamp),
+          action: record.action,
+          sessionId: record.session_id,
+          sessionPeriod: record.session_period || 0,
+          riskScore: riskScore,
+          metadata: {
+            realm: record.realm || 'demo',
+            clientId: record.client_id || 'demo-client',
+            tokenType: 'Bearer'
+          }
+          };
+        });
+        console.log('Transformed data:', transformedData);
+        setBehaviorData(transformedData);
+      } else {
+        console.error('Failed to fetch behavior data from backend');
+        // Fallback to localStorage data
+        const localData = getBehaviorData();
+        setBehaviorData(localData);
+      }
+    } catch (error) {
+      console.error('Error fetching behavior data:', error);
+      // Fallback to localStorage data
+      const localData = getBehaviorData();
+      setBehaviorData(localData);
+    }
+  };
+
+  const handleClearBehaviorData = () => {
+    if (window.confirm('Are you sure you want to clear all behavior data?')) {
+      clearBehaviorData();
+      setBehaviorData([]);
+    }
+  };
+
+  const exportBehaviorData = () => {
+    const dataStr = JSON.stringify(behaviorData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `hospital_behavior_data_${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const renderUserActivity = () => {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="bg-purple-600 text-white p-6 rounded-xl">
+          <h2 className="text-2xl font-bold">🔍 User Behavior Analytics</h2>
+          <p className="text-purple-100">Data for ML Anomaly Detection Model</p>
+        </div>
+
+        {/* Stats Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">{behaviorData.length}</div>
+            <div className="text-sm text-gray-600">Total Events</div>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-green-600">
+              {behaviorData.filter(d => d.riskScore === 0).length}
             </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-300" />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="pl-10 pr-8 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-              >
-                <option value="all">All Status</option>
-                <option value="success">Success</option>
-                <option value="failed">Failed</option>
-                <option value="warning">Warning</option>
-              </select>
+            <div className="text-sm text-gray-600">Pending ML</div>
+          </div>
+          <div className="bg-yellow-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-yellow-600">
+              {behaviorData.filter(d => d.riskScore > 0 && d.riskScore < 0.7).length}
             </div>
+            <div className="text-sm text-gray-600">Low-Medium Risk</div>
+          </div>
+          <div className="bg-red-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-red-600">
+              {behaviorData.filter(d => d.riskScore >= 0.7).length}
+            </div>
+            <div className="text-sm text-gray-600">High Risk</div>
           </div>
         </div>
-      </div>
 
-      {/* Activity Table */}
-      <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
-        <div className="p-6 border-b border-white/10">
-          <h2 className="text-xl font-semibold text-white">Real-time Activity Log (Audit)</h2>
-          <p className="text-purple-200 text-sm mt-1">
-            Showing {filteredActivities.length} of {activities.length} activities
-          </p>
+        {/* Actions */}
+        <div className="flex space-x-4">
+          <button
+            onClick={refreshBehaviorData}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            🔄 Refresh
+          </button>
+          <button
+            onClick={exportBehaviorData}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+          >
+            📥 Export JSON
+          </button>
+          <button
+            onClick={handleClearBehaviorData}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+          >
+            🗑️ Clear Data
+          </button>
         </div>
 
-        <div className="overflow-x-auto max-h-96">
-          <table className="w-full">
-            <thead className="bg-white/5 sticky top-0">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Timestamp</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Action</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Resource</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">IP Address</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Risk</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {filteredActivities.slice(0, 50).map((activity) => (
-                <tr key={activity.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 text-sm text-white">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-purple-300" />
-                      <span>{formatTimestamp(activity.timestamp)}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-white font-medium">
-                    {activity.username}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-purple-200">
-                    {activity.action.replace(/_/g, ' ')}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-purple-200">
-                    {activity.resource.replace(/_/g, ' ')}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-purple-300 font-mono">
-                    {activity.ipAddress}
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={getStatusBadge(activity.status)}>
-                      {activity.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={getRiskBadge(activity.riskLevel)}>
-                      {activity.riskLevel}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Data Table */}
+        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+          {behaviorData.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <div className="text-4xl mb-4">📊</div>
+              <h3 className="text-lg font-semibold mb-2">No behavior data yet</h3>
+              <p>Start using the application to collect data for ML analysis</p>
+            </div>
+          ) : (
+            <div className="overflow-auto max-h-96">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP Address</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Session</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Risk</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {behaviorData
+                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                    .map((item, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {formatTimestamp(item.timestamp)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          <div>{item.username}</div>
+                          <div className="text-xs text-gray-500">{item.email}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                            {item.action}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500">{item.ipAddress}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500">
+                          <div>{item.sessionPeriod}m</div>
+                          <div className="text-xs">{item.sessionId.slice(-8)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          <div className="flex items-center">
+                            <div className="w-12 bg-gray-200 rounded-full h-2 mr-2">
+                              <div 
+                                className={`h-2 rounded-full ${
+                                  item.riskScore === 0 ? 'bg-gray-500' :
+                                  item.riskScore > 0.7 ? 'bg-red-500' : 
+                                  item.riskScore > 0.3 ? 'bg-yellow-500' : 'bg-green-500'
+                                }`}
+                                style={{ width: `${item.riskScore > 0 && typeof item.riskScore === 'number' ? item.riskScore * 100 : 10}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs">
+                              {item.riskScore > 0 ? 
+                                (typeof item.riskScore === 'number' ? item.riskScore.toFixed(3) : item.riskScore) : 
+                                'Pending ML'
+                              }
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderAnalytics = () => (
-    <div className="space-y-6">
-      {/* Analytics Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-purple-200">Total Actions</h3>
-            <Activity className="h-4 w-4 text-purple-300" />
-          </div>
-          <div className="text-2xl font-bold text-white">{activities.length}</div>
-          <p className="text-xs text-purple-300 mt-1">All user & admin actions</p>
-        </div>
-        
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-purple-200">Admin Actions</h3>
-            <Shield className="h-4 w-4 text-red-400" />
-          </div>
-          <div className="text-2xl font-bold text-red-400">
-            {activities.filter(a => a.username === 'admin').length}
-          </div>
-          <p className="text-xs text-purple-300 mt-1">Admin activities</p>
-        </div>
-        
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-purple-200">Failed Actions</h3>
-            <AlertTriangle className="h-4 w-4 text-red-400" />
-          </div>
-          <div className="text-2xl font-bold text-red-400">
-            {activities.filter(a => a.status === 'failed').length}
-          </div>
-          <p className="text-xs text-purple-300 mt-1">Security alerts</p>
-        </div>
-        
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-purple-200">High Risk</h3>
-            <Target className="h-4 w-4 text-yellow-400" />
-          </div>
-          <div className="text-2xl font-bold text-yellow-400">
-            {activities.filter(a => a.riskLevel === 'high').length}
-          </div>
-          <p className="text-xs text-purple-300 mt-1">Risk monitoring</p>
-        </div>
-      </div>
-
-      {/* Search and Filter Controls */}
-      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-300" />
-              <input
-                type="text"
-                placeholder="Search users, actions, resources..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-300" />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="pl-10 pr-8 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-              >
-                <option value="all">All Status</option>
-                <option value="success">Success</option>
-                <option value="failed">Failed</option>
-                <option value="warning">Warning</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Comprehensive Audit Log */}
-      <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
-        <div className="p-6 border-b border-white/10">
-          <h2 className="text-xl font-semibold text-white">Complete System Audit Log</h2>
-          <p className="text-purple-200 text-sm mt-1">
-            All user and admin activities - Showing {filteredActivities.length} of {activities.length} actions
-          </p>
-        </div>
-
-        <div className="overflow-x-auto max-h-96">
-          <table className="w-full">
-            <thead className="bg-white/5 sticky top-0">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Timestamp</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">User Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Action</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Resource</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">IP Address</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Risk</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {filteredActivities.slice(0, 100).map((activity) => {
-                const isAdmin = activity.username === 'admin';
-                const isDoctor = activity.username.includes('dr.');
-                const isNurse = activity.username.includes('nurse.');
-                
-                return (
-                  <tr key={activity.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 text-sm text-white">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4 text-purple-300" />
-                        <span>{formatTimestamp(activity.timestamp)}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        isAdmin ? 'bg-red-500/20 text-red-300 border border-red-500/30' :
-                        isDoctor ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
-                        isNurse ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
-                        'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-                      }`}>
-                        {isAdmin ? 'Admin' : isDoctor ? 'Doctor' : isNurse ? 'Nurse' : 'User'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-white font-medium">
-                      {activity.username}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-purple-200">
-                      {activity.action.replace(/_/g, ' ')}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-purple-200">
-                      {activity.resource.replace(/_/g, ' ')}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-purple-300 font-mono">
-                      {activity.ipAddress}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={getStatusBadge(activity.status)}>
-                        {activity.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={getRiskBadge(activity.riskLevel)}>
-                        {activity.riskLevel}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <div className="bg-gray-50 min-h-screen -m-4 md:-m-8 p-4 md:p-8">
+      <MLRiskDashboard />
     </div>
   );
 
@@ -624,9 +608,18 @@ const UnifiedAdminDashboard = () => {
 
 
 
+  const handleLogout = () => {
+    trackLogout();
+    trackButtonClick('logout', 'header');
+    logout();
+    navigate('/');
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Restored Original Header with Notification Bell */}
       <UnifiedHeader />
+      
       <main className="flex-1 bg-white">
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
           {/* Header */}

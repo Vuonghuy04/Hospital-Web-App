@@ -7,7 +7,6 @@ import JITDemoPage from './pages/JITDemoPage';
 import DatabaseViewerPage from './pages/DatabaseViewerPage';
 import { AuthProvider } from './contexts/MockAuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import AnalyticsDashboard from './components/AnalyticsDashboard';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminLandingPage from './pages/admin/AdminLandingPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
@@ -250,7 +249,6 @@ function App() {
             </ProtectedRoute>
           } />
           </Routes>
-          <AnalyticsDashboard />
         </BrowserRouter>
       </AuthProvider>
     </ErrorBoundary>

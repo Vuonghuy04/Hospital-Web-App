@@ -6,7 +6,8 @@ import {
   Activity, 
   Brain, 
   Shield, 
-  Database 
+  Database,
+  Bot
 } from 'lucide-react';
 
 const AdminNavigation = () => {

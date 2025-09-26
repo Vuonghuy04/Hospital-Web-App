@@ -1,0 +1,40 @@
+# Docker Compose Override for Development
+# This file provides development-specific configurations
+
+services:
+  # ML Service - Development overrides
+  ml-service:
+    volumes:
+      # Mount local files for development
+      - ./ml-service:/app
+      - ./iso_forest_time_encoders.pkl:/app/iso_forest_time_encoders.pkl
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    command: ["python", "-u", "python_ml_service.py"]
+
+  # Backend - Development overrides
+  backend:
+    environment:
+      - NODE_ENV=development
+      - DEBUG=hospital:*
+    volumes:
+      # Mount source code for hot reload
+      - ./backend:/app
+      - /app/node_modules
+
+  # Frontend - Development overrides
+  frontend:
+    environment:
+      - REACT_APP_ENV=development
+    volumes:
+      # Mount source code for hot reload
+      - .:/app
+      - /app/node_modules
+
+  # PostgreSQL - Development overrides
+  postgres:
+    ports:
+      - "5432:5432"  # Expose PostgreSQL port for external access
+    environment:
+      - POSTGRES_LOG_STATEMENT=all  # Log all SQL statements

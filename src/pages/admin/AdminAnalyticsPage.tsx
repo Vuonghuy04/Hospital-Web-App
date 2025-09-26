@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
-import { BarChart3, TrendingUp, TrendingDown, Users, Shield, AlertTriangle, Activity } from "lucide-react"
+import { BarChart3, TrendingUp, TrendingDown, Users, Shield, AlertTriangle, Activity, Bot } from "lucide-react"
+import MLRiskDashboard from "../../components/MLRiskDashboard"
 
 export default function AdminAnalyticsPage() {
   const [analyticsData] = useState({
@@ -23,6 +24,7 @@ export default function AdminAnalyticsPage() {
           <TabsTrigger value="users">User Analytics</TabsTrigger>
           <TabsTrigger value="security">Security Trends</TabsTrigger>
           <TabsTrigger value="activity">Activity Patterns</TabsTrigger>
+          <TabsTrigger value="ml-risk">ML Risk Analysis</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -207,6 +209,10 @@ export default function AdminAnalyticsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="ml-risk" className="space-y-4">
+          <MLRiskDashboard />
         </TabsContent>
       </Tabs>
     </div>

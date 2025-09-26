@@ -1,0 +1,160 @@
+﻿{
+    "databaseName":  "hospital_analytics",
+    "tables":  [
+                   {
+                       "name":  "jit_requests",
+                       "rowCount":  0,
+                       "sampleRows":  [
+
+                                      ],
+                       "columnCount":  "17"
+                   },
+                   {
+                       "name":  "policy_violations",
+                       "rowCount":  0,
+                       "sampleRows":  [
+
+                                      ],
+                       "columnCount":  "16"
+                   },
+                   {
+                       "name":  "user_behavior",
+                       "rowCount":  534,
+                       "sampleRows":  [
+                                          {
+                                              "id":  1,
+                                              "username":  "duc",
+                                              "user_id":  "duc",
+                                              "email":  "duc@hospital.com",
+                                              "roles":  [
+                                                            "offline_access",
+                                                            "uma_authorization",
+                                                            "default-roles-demo"
+                                                        ],
+                                              "ip_address":  "210.5.32.146",
+                                              "user_agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+                                              "timestamp":  "2025-09-20T05:21:32.992Z",
+                                              "action":  "user_login",
+                                              "session_id":  "session_1758345558104_bepralwd0",
+                                              "session_period":  2,
+                                              "risk_score":  "0.00",
+                                              "risk_level":  "low",
+                                              "metadata":  {
+                                                               "realm":  "demo",
+                                                               "clientId":  "demo-client",
+                                                               "tokenType":  "Bearer"
+                                                           },
+                                              "created_at":  "2025-09-20T05:21:32.992Z",
+                                              "updated_at":  "2025-09-20T05:21:32.992Z"
+                                          },
+                                          {
+                                              "id":  2,
+                                              "username":  "duc",
+                                              "user_id":  "duc",
+                                              "email":  "duc@hospital.com",
+                                              "roles":  [
+                                                            "offline_access",
+                                                            "uma_authorization",
+                                                            "default-roles-demo"
+                                                        ],
+                                              "ip_address":  "210.5.32.146",
+                                              "user_agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+                                              "timestamp":  "2025-09-20T05:21:33.305Z",
+                                              "action":  "page_view_home",
+                                              "session_id":  "session_1758345558104_bepralwd0",
+                                              "session_period":  2,
+                                              "risk_score":  "0.00",
+                                              "risk_level":  "low",
+                                              "metadata":  {
+                                                               "realm":  "demo",
+                                                               "clientId":  "demo-client",
+                                                               "tokenType":  "Bearer"
+                                                           },
+                                              "created_at":  "2025-09-20T05:21:33.305Z",
+                                              "updated_at":  "2025-09-20T05:21:33.305Z"
+                                          },
+                                          {
+                                              "id":  3,
+                                              "username":  "duc",
+                                              "user_id":  "duc",
+                                              "email":  "duc@hospital.com",
+                                              "roles":  [
+                                                            "offline_access",
+                                                            "uma_authorization",
+                                                            "default-roles-demo"
+                                                        ],
+                                              "ip_address":  "210.5.32.146",
+                                              "user_agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+                                              "timestamp":  "2025-09-20T05:21:33.598Z",
+                                              "action":  "page_view_user_dashboard_duc",
+                                              "session_id":  "session_1758345558104_bepralwd0",
+                                              "session_period":  2,
+                                              "risk_score":  "0.00",
+                                              "risk_level":  "low",
+                                              "metadata":  {
+                                                               "realm":  "demo",
+                                                               "clientId":  "demo-client",
+                                                               "tokenType":  "Bearer"
+                                                           },
+                                              "created_at":  "2025-09-20T05:21:33.598Z",
+                                              "updated_at":  "2025-09-20T05:21:33.598Z"
+                                          },
+                                          {
+                                              "id":  4,
+                                              "username":  "duc",
+                                              "user_id":  "duc",
+                                              "email":  "duc@hospital.com",
+                                              "roles":  [
+                                                            "offline_access",
+                                                            "uma_authorization",
+                                                            "default-roles-demo"
+                                                        ],
+                                              "ip_address":  "210.5.32.146",
+                                              "user_agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+                                              "timestamp":  "2025-09-20T05:21:36.274Z",
+                                              "action":  "navigate_/duc_to_/duc/financial",
+                                              "session_id":  "session_1758345558104_bepralwd0",
+                                              "session_period":  2,
+                                              "risk_score":  "0.00",
+                                              "risk_level":  "low",
+                                              "metadata":  {
+                                                               "realm":  "demo",
+                                                               "clientId":  "demo-client",
+                                                               "tokenType":  "Bearer"
+                                                           },
+                                              "created_at":  "2025-09-20T05:21:36.274Z",
+                                              "updated_at":  "2025-09-20T05:21:36.274Z"
+                                          },
+                                          {
+                                              "id":  5,
+                                              "username":  "duc",
+                                              "user_id":  "duc",
+                                              "email":  "duc@hospital.com",
+                                              "roles":  [
+                                                            "offline_access",
+                                                            "uma_authorization",
+                                                            "default-roles-demo"
+                                                        ],
+                                              "ip_address":  "210.5.32.146",
+                                              "user_agent":  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+                                              "timestamp":  "2025-09-20T05:21:36.571Z",
+                                              "action":  "click_nav_financial_header",
+                                              "session_id":  "session_1758345558104_bepralwd0",
+                                              "session_period":  2,
+                                              "risk_score":  "0.00",
+                                              "risk_level":  "low",
+                                              "metadata":  {
+                                                               "realm":  "demo",
+                                                               "clientId":  "demo-client",
+                                                               "tokenType":  "Bearer"
+                                                           },
+                                              "created_at":  "2025-09-20T05:21:36.571Z",
+                                              "updated_at":  "2025-09-20T05:21:36.571Z"
+                                          }
+                                      ],
+                       "columnCount":  "16"
+                   }
+               ],
+    "totalTables":  3,
+    "timestamp":  "2025-09-20T06:15:25.417Z"
+}
