@@ -48,7 +48,7 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive>
-                  <a href="/dashboard">
+                  <a href="/admin">
                     <Home />
                     <span>Overview</span>
                   </a>
@@ -56,7 +56,7 @@ export function AppSidebar() {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a href="/dashboard/analytics">
+                  <a href="/admin/analytics">
                     <BarChart3 />
                     <span>Analytics</span>
                   </a>
@@ -64,7 +64,7 @@ export function AppSidebar() {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a href="/dashboard/audit">
+                  <a href="/admin/audit">
                     <Activity />
                     <span>User Activity</span>
                   </a>
