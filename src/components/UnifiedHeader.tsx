@@ -41,7 +41,7 @@ const UnifiedHeader = () => {
     { name: 'Audit Logs', path: '/admin/audit', icon: Database },
     { name: 'Users', path: '/admin/users', icon: Users },
     { name: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
-    { name: 'Security', path: '/admin/risk', icon: Shield },
+    { name: 'Risk Assessment', path: '/admin/risk-assessment', icon: Shield },
   ];
 
   // User navigation items (patient/doctor/nurse focused)

@@ -66,7 +66,7 @@ export function TopNavbar() {
               <span>Hospital Analytics</span>
             </Link>
             
-            <Link to="/admin/dashboard" className="hover:text-foreground">
+            <Link to="/admin" className="hover:text-foreground">
               Dashboard
             </Link>
             
@@ -82,11 +82,11 @@ export function TopNavbar() {
               User Activity
             </Link>
 
-            <Link to="/admin/behavioral-monitoring" className="text-muted-foreground hover:text-foreground">
+            <Link to="/admin/behavior-analysis" className="text-muted-foreground hover:text-foreground">
               Behavior Analysis
             </Link>
 
-            <Link to="/admin/risk-scores" className="text-muted-foreground hover:text-foreground">
+            <Link to="/admin/risk-assessment" className="text-muted-foreground hover:text-foreground">
               Risk Assessment
             </Link>
 
@@ -96,7 +96,7 @@ export function TopNavbar() {
       </Sheet>
       
       {/* Logo and title - Desktop */}
-      <Link to="/admin/dashboard" className="flex items-center gap-2">
+      <Link to="/admin" className="flex items-center gap-2">
         <Hospital className="h-6 w-6" />
         <span className="font-bold hidden sm:inline-block">Hospital Analytics Admin Console</span>
       </Link>

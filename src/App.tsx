@@ -8,7 +8,6 @@ import DatabaseViewerPage from './pages/DatabaseViewerPage';
 import { AuthProvider } from './contexts/MockAuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './pages/admin/AdminLayout';
-import AdminLandingPage from './pages/admin/AdminLandingPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
@@ -76,11 +75,11 @@ function App() {
             </ProtectedRoute>
           } />
           
-          {/* Audit Route - Direct to Activity Tab */}
+          {/* Audit Route - Redirect to proper admin audit page */}
           <Route path="/audit" element={
             <ProtectedRoute>
               <AdminRoute requiredRole="admin">
-                <UnifiedAdminDashboard />
+                <AuditPage />
               </AdminRoute>
             </ProtectedRoute>
           } />
@@ -176,7 +175,7 @@ function App() {
             </ProtectedRoute>
           } />
           
-          {/* User Dashboard Routes */}
+          {/* User Dashboard Routes - MUST be at the end to avoid conflicts with other routes */}
           <Route path="/:username" element={
             <ProtectedRoute>
               <UserDashboardPage />
