@@ -175,12 +175,15 @@ router.post('/', async (req, res) => {
       if (requesterRole === 'manager' || requesterRole === 'admin') {
         autoApproved = true;
         approvalReason = 'Auto-approved: Manager/Admin role';
-      } else if (requesterRole === 'doctor' && resourceType === 'patient_record') {
+      } else if (requesterRole === 'doctor' && ['patient_record', 'prescription', 'lab_results'].includes(resourceType)) {
         autoApproved = true;
-        approvalReason = 'Auto-approved: Doctor accessing patient records';
+        approvalReason = `Auto-approved: Doctor accessing ${resourceType}`;
       } else if (requesterRole === 'nurse' && resourceType === 'patient_record' && accessLevel === 'read') {
         autoApproved = true;
         approvalReason = 'Auto-approved: Nurse read access to patient records';
+      } else if (requesterRole === 'accountant' && resourceType === 'finance') {
+        autoApproved = true;
+        approvalReason = 'Auto-approved: Accountant accessing financial data';
       }
 
       if (autoApproved) {
@@ -231,6 +234,8 @@ router.get('/', async (req, res) => {
       requesterId, 
       status, 
       approverId,
+      resourceType,
+      resourceId,
       limit = 50, 
       offset = 0 
     } = req.query;
@@ -255,6 +260,16 @@ router.get('/', async (req, res) => {
       if (approverId) {
         whereClause += ` AND approver_id = $${++paramCount}`;
         values.push(approverId);
+      }
+      
+      if (resourceType) {
+        whereClause += ` AND resource_type = $${++paramCount}`;
+        values.push(resourceType);
+      }
+      
+      if (resourceId) {
+        whereClause += ` AND resource_id = $${++paramCount}`;
+        values.push(resourceId);
       }
 
       const query = `

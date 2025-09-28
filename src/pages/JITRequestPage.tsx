@@ -25,10 +25,85 @@ const JITRequestPage = () => {
     id: string;
     name: string;
   } | null>(null);
+  const [resourceStatuses, setResourceStatuses] = useState<{[key: string]: any}>({});
 
   useEffect(() => {
     trackPageView('jit_request');
-  }, []);
+    checkResourceStatuses();
+  }, [user]);
+
+  const checkResourceStatuses = async () => {
+    if (!user) {
+      console.log('❌ No user found in checkResourceStatuses');
+      return;
+    }
+
+    console.log('🔍 Checking resource statuses for user:', user.username);
+
+    const resources = [
+      { type: 'patient_record', id: `patient-${user.username}`, name: `Patient ${user.username} Medical Record` },
+      { type: 'prescription', id: `prescriptions-${user.username}`, name: `Prescriptions for ${user.username}` },
+      { type: 'lab_results', id: `lab-${user.username}`, name: `Lab Results for ${user.username}` }
+    ];
+
+    const statuses: {[key: string]: any} = {};
+
+    for (const resource of resources) {
+      try {
+        console.log(`🔍 Checking ${resource.type}/${resource.id} for user ${user.username}`);
+        
+        // Check for approved requests
+        const approvedResponse = await fetch(
+          `http://localhost:5002/api/jit?requesterId=${user.username}&resourceType=${resource.type}&resourceId=${resource.id}&status=approved&limit=1`
+        );
+        const approvedData = await approvedResponse.json();
+        
+        console.log(`📊 Approved response for ${resource.type}:`, approvedData);
+
+        if (approvedData.success && approvedData.data.length > 0) {
+          const request = approvedData.data[0];
+          const expiresAt = new Date(request.expires_at);
+          const now = new Date();
+          
+          if (expiresAt > now) {
+            statuses[`${resource.type}-${resource.id}`] = {
+              status: 'approved',
+              request: request,
+              expiresAt: expiresAt
+            };
+            continue;
+          }
+        }
+
+        // Check for pending requests
+        const pendingResponse = await fetch(
+          `http://localhost:5002/api/jit?requesterId=${user.username}&resourceType=${resource.type}&resourceId=${resource.id}&status=pending&limit=1`
+        );
+        const pendingData = await pendingResponse.json();
+        
+        console.log(`📊 Pending response for ${resource.type}:`, pendingData);
+
+        if (pendingData.success && pendingData.data.length > 0) {
+          statuses[`${resource.type}-${resource.id}`] = {
+            status: 'pending',
+            request: pendingData.data[0]
+          };
+        } else {
+          statuses[`${resource.type}-${resource.id}`] = {
+            status: 'none'
+          };
+        }
+      } catch (error) {
+        console.error(`Error checking status for ${resource.type}-${resource.id}:`, error);
+        statuses[`${resource.type}-${resource.id}`] = {
+          status: 'error'
+        };
+      }
+    }
+
+    console.log('📊 Final resource statuses:', statuses);
+    setResourceStatuses(statuses);
+  };
 
   const handleRequestAccess = (resourceType: string, resourceId: string, resourceName: string) => {
     setSelectedResource({ type: resourceType, id: resourceId, name: resourceName });
@@ -37,9 +112,69 @@ const JITRequestPage = () => {
 
   const handleRequestSubmitted = (request: any) => {
     console.log('JIT request submitted:', request);
+    // Refresh the resource statuses
+    checkResourceStatuses();
     // Refresh the request list if we're on that tab
     if (activeTab === 'my-requests') {
       // The JITRequestList component will handle refreshing
+    }
+  };
+
+  const getResourceStatus = (resourceType: string, resourceId: string) => {
+    return resourceStatuses[`${resourceType}-${resourceId}`] || { status: 'none' };
+  };
+
+  const renderResourceStatus = (resourceType: string, resourceId: string, resourceName: string) => {
+    const status = getResourceStatus(resourceType, resourceId);
+    
+    switch (status.status) {
+      case 'approved':
+        return (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-400" />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-green-800">
+                  Access Granted
+                </p>
+                <p className="text-xs text-green-600">
+                  Expires: {status.expiresAt.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      case 'pending':
+        return (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center">
+              <Clock className="h-5 w-5 text-yellow-400" />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-yellow-800">
+                  Request Pending
+                </p>
+                <p className="text-xs text-yellow-600">
+                  Requested: {new Date(status.request.created_at).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      case 'error':
+        return (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-red-400" />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-red-800">
+                  Error checking status
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
@@ -133,9 +268,13 @@ const JITRequestPage = () => {
                       <p className="text-sm text-gray-600">Access patient medical history</p>
                     </div>
                   </div>
+                  
+                  {/* Status Display */}
+                  {renderResourceStatus('patient_record', `patient-${user?.username}`, `Patient ${user?.username} Medical Record`)}
+                  
                   <div className="space-y-2 mb-4">
                     <div className="text-sm text-gray-600">
-                      <strong>Example:</strong> Patient ID: P-12345
+                      <strong>Example:</strong> Patient ID: patient-{user?.username}
                     </div>
                     <div className="text-sm text-gray-600">
                       <strong>Access:</strong> Read/Write
@@ -144,12 +283,33 @@ const JITRequestPage = () => {
                       <strong>Duration:</strong> 2-8 hours
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleRequestAccess('patient_record', 'P-12345', 'Patient P-12345 Medical Record')}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Request Access
-                  </button>
+                  
+                  {getResourceStatus('patient_record', `patient-${user?.username}`).status === 'none' && (
+                    <button
+                      onClick={() => handleRequestAccess('patient_record', `patient-${user?.username}`, `Patient ${user?.username} Medical Record`)}
+                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Request Access
+                    </button>
+                  )}
+                  
+                  {getResourceStatus('patient_record', `patient-${user?.username}`).status === 'pending' && (
+                    <button
+                      onClick={checkResourceStatuses}
+                      className="w-full bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors"
+                    >
+                      Check Status
+                    </button>
+                  )}
+                  
+                  {getResourceStatus('patient_record', `patient-${user?.username}`).status === 'approved' && (
+                    <button
+                      onClick={checkResourceStatuses}
+                      className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Refresh Status
+                    </button>
+                  )}
                 </div>
 
                 {/* Prescriptions */}
@@ -161,9 +321,13 @@ const JITRequestPage = () => {
                       <p className="text-sm text-gray-600">View and edit prescriptions</p>
                     </div>
                   </div>
+                  
+                  {/* Status Display */}
+                  {renderResourceStatus('prescription', `prescriptions-${user?.username}`, `Prescriptions for ${user?.username}`)}
+                  
                   <div className="space-y-2 mb-4">
                     <div className="text-sm text-gray-600">
-                      <strong>Example:</strong> Prescription ID: RX-78901
+                      <strong>Example:</strong> Prescription ID: prescriptions-{user?.username}
                     </div>
                     <div className="text-sm text-gray-600">
                       <strong>Access:</strong> Read/Write
@@ -172,12 +336,33 @@ const JITRequestPage = () => {
                       <strong>Duration:</strong> 1-4 hours
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleRequestAccess('prescription', 'RX-78901', 'Prescription RX-78901')}
-                    className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-                  >
-                    Request Access
-                  </button>
+                  
+                  {getResourceStatus('prescription', `prescriptions-${user?.username}`).status === 'none' && (
+                    <button
+                      onClick={() => handleRequestAccess('prescription', `prescriptions-${user?.username}`, `Prescriptions for ${user?.username}`)}
+                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Request Access
+                    </button>
+                  )}
+                  
+                  {getResourceStatus('prescription', `prescriptions-${user?.username}`).status === 'pending' && (
+                    <button
+                      onClick={checkResourceStatuses}
+                      className="w-full bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors"
+                    >
+                      Check Status
+                    </button>
+                  )}
+                  
+                  {getResourceStatus('prescription', `prescriptions-${user?.username}`).status === 'approved' && (
+                    <button
+                      onClick={checkResourceStatuses}
+                      className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Refresh Status
+                    </button>
+                  )}
                 </div>
 
                 {/* Lab Results */}
@@ -189,9 +374,13 @@ const JITRequestPage = () => {
                       <p className="text-sm text-gray-600">Access laboratory test results</p>
                     </div>
                   </div>
+                  
+                  {/* Status Display */}
+                  {renderResourceStatus('lab_results', `lab-${user?.username}`, `Lab Results for ${user?.username}`)}
+                  
                   <div className="space-y-2 mb-4">
                     <div className="text-sm text-gray-600">
-                      <strong>Example:</strong> Lab ID: LAB-45678
+                      <strong>Example:</strong> Lab ID: lab-{user?.username}
                     </div>
                     <div className="text-sm text-gray-600">
                       <strong>Access:</strong> Read Only
@@ -200,12 +389,33 @@ const JITRequestPage = () => {
                       <strong>Duration:</strong> 1-2 hours
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleRequestAccess('lab_results', 'LAB-45678', 'Lab Results LAB-45678')}
-                    className="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
-                  >
-                    Request Access
-                  </button>
+                  
+                  {getResourceStatus('lab_results', `lab-${user?.username}`).status === 'none' && (
+                    <button
+                      onClick={() => handleRequestAccess('lab_results', `lab-${user?.username}`, `Lab Results for ${user?.username}`)}
+                      className="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
+                    >
+                      Request Access
+                    </button>
+                  )}
+                  
+                  {getResourceStatus('lab_results', `lab-${user?.username}`).status === 'pending' && (
+                    <button
+                      onClick={checkResourceStatuses}
+                      className="w-full bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors"
+                    >
+                      Check Status
+                    </button>
+                  )}
+                  
+                  {getResourceStatus('lab_results', `lab-${user?.username}`).status === 'approved' && (
+                    <button
+                      onClick={checkResourceStatuses}
+                      className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Refresh Status
+                    </button>
+                  )}
                 </div>
 
                 {/* Finance Data (Restricted) */}
