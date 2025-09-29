@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class RiskPredictionService:
-    def __init__(self, model_path='iso_forest_time_encoders.pkl'):
+    def __init__(self, model_path='../data/models/iso_forest_time_encoders.pkl'):
         self.model_path = model_path
         self.label_encoders = {}
         self.iso_forest = None

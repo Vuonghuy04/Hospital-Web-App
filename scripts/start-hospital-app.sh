@@ -16,11 +16,11 @@ fi
 
 # Stop any existing containers
 echo "🔄 Stopping any existing containers..."
-docker-compose down
+docker-compose -f deployment/docker/docker-compose.yml down
 
 # Build and start the application
 echo "🚀 Building and starting the Hospital Web App..."
-docker-compose up --build -d
+docker-compose -f deployment/docker/docker-compose.yml up --build -d
 
 # Wait for services to be healthy
 echo "⏳ Waiting for services to start..."
@@ -28,7 +28,7 @@ sleep 10
 
 # Check service status
 echo "📊 Checking service status..."
-docker-compose ps
+docker-compose -f deployment/docker/docker-compose.yml ps
 
 # Test endpoints
 echo ""
@@ -44,6 +44,6 @@ echo "🔧 Backend API: http://localhost:5001"
 echo "📊 Health Check: http://localhost:5001/api/health"
 echo "🗄️  Database Viewer: http://localhost:5001/api/database-viewer"
 echo ""
-echo "To stop the application, run: docker-compose down"
-echo "To view logs, run: docker-compose logs -f"
+echo "To stop the application, run: docker-compose -f deployment/docker/docker-compose.yml down"
+echo "To view logs, run: docker-compose -f deployment/docker/docker-compose.yml logs -f"
 

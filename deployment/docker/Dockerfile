@@ -35,7 +35,7 @@ FROM nginx:alpine
 COPY --from=builder /app/build /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY deployment/docker/nginx.conf /etc/nginx/nginx.conf
 
 # Create non-root user and set permissions
 RUN adduser -S nginxuser -u 1001 -G nginx
