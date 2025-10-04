@@ -3,6 +3,7 @@ import express from 'express';
 import pkg from 'pg';
 import cors from 'cors';
 import behaviorRouter from './routes/behavior.js';
+import behaviorProfilesRouter from './routes/behavior-profiles.js';
 import hospitalRouter from './routes/hospital.js';
 import riskRouter from './routes/risk.js';
 import jitRouter from './routes/jit.js';
@@ -119,6 +120,7 @@ const { Pool } = pkg;
 
   // Routes
   app.use("/api/behavior-tracking", behaviorRouter);
+  app.use("/api/behavior-profiles", behaviorProfilesRouter); // Behavior profile management
   app.use("/api/hospital", hospitalRouter); // Hospital admin routes
   app.use("/api/risk", riskRouter); // Risk assessment routes
   app.use("/api/jit", jitRouter); // JIT access control routes

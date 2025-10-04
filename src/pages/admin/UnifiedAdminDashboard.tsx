@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/MockAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { trackPageView, trackButtonClick, trackLogout, getBehaviorData, clearBehaviorData } from '../../services/behaviorTracking';
+import { trackActionWithProfiling, behaviorProfiler } from '../../services/behaviorProfiler';
+import BehaviorProfileDashboard from '../../components/BehaviorProfileDashboard';
 import JITApprovalPanel from '../../components/JITApprovalPanel';
 import PolicyViolationsPanel from '../../components/PolicyViolationsPanel';
 import MLRiskDashboard from '../../components/MLRiskDashboard';
@@ -120,14 +122,21 @@ const UnifiedAdminDashboard = () => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'activity', label: 'User Activity', icon: Activity },
-    { id: 'analytics', label: 'Analytics', icon: Brain },
+    { id: 'behavior-profiles', label: 'Behavior Profiles', icon: Brain },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'risk', label: 'Risk Assessment', icon: Target },
     { id: 'jit-approvals', label: 'JIT Approvals', icon: CheckCircle },
     { id: 'policy-violations', label: 'Policy Violations', icon: AlertTriangle }
   ];
 
   useEffect(() => {
+    // Enhanced behavior tracking with profiling
     trackPageView('unified_admin_dashboard');
+    trackActionWithProfiling('admin_dashboard_access', { 
+      page: 'unified_admin_dashboard',
+      role: 'admin',
+      context: 'page_load'
+    });
   }, []);
 
   // Load behavior data when activity tab is selected
@@ -135,6 +144,13 @@ const UnifiedAdminDashboard = () => {
     if (activeTab === 'activity') {
       refreshBehaviorData();
     }
+    
+    // Track tab changes with enhanced profiling
+    trackActionWithProfiling(`admin_tab_switch_${activeTab}`, {
+      previous_tab: 'unknown', // Could track previous tab if needed
+      current_tab: activeTab,
+      context: 'unified_admin_dashboard'
+    });
   }, [activeTab]);
 
   // Generate mock data
@@ -608,9 +624,14 @@ const UnifiedAdminDashboard = () => {
 
 
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Enhanced logout tracking with profiling
     trackLogout();
     trackButtonClick('logout', 'header');
+    await trackActionWithProfiling('admin_logout', { 
+      context: 'unified_admin_dashboard',
+      session_duration: Date.now() - performance.timing.navigationStart
+    });
     logout();
     navigate('/');
   };
@@ -667,6 +688,12 @@ const UnifiedAdminDashboard = () => {
             <div className="space-y-6">
               {activeTab === 'overview' && renderDashboard()}
               {activeTab === 'activity' && renderUserActivity()}
+              {activeTab === 'behavior-profiles' && (
+                <BehaviorProfileDashboard 
+                  userId={user?.username} 
+                  className="space-y-6"
+                />
+              )}
               {activeTab === 'analytics' && renderAnalytics()}
               {activeTab === 'risk' && renderRiskAssessment()}
               {activeTab === 'jit-approvals' && <JITApprovalPanel />}
