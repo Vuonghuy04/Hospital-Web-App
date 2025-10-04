@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/MockAuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { trackPageView, trackButtonClick, trackLogout, getBehaviorData, clearBehaviorData } from '../../services/behaviorTracking';
 import { trackActionWithProfiling, behaviorProfiler } from '../../services/behaviorProfiler';
 import BehaviorProfileDashboard from '../../components/BehaviorProfileDashboard';
 import JITApprovalPanel from '../../components/JITApprovalPanel';
 import PolicyViolationsPanel from '../../components/PolicyViolationsPanel';
 import MLRiskDashboard from '../../components/MLRiskDashboard';
+import EnhancedAuditDashboard from '../../components/EnhancedAuditDashboard';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { 
   Shield, 
@@ -93,8 +94,23 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002';
 const UnifiedAdminDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  
+  // Get current section from URL path
+  const getCurrentSection = () => {
+    const path = location.pathname;
+    if (path === '/admin') return 'overview';
+    if (path.includes('/admin/activity')) return 'activity';
+    if (path.includes('/admin/behavior-profiles')) return 'behavior-profiles';
+    if (path.includes('/admin/analytics')) return 'analytics';
+    if (path.includes('/admin/risk-assessment')) return 'risk';
+    if (path.includes('/admin/jit-approvals')) return 'jit-approvals';
+    if (path.includes('/admin/policy-violations')) return 'policy-violations';
+    return 'overview';
+  };
+  
+  const currentSection = getCurrentSection();
   
   // Dashboard data
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics>({
@@ -119,15 +135,7 @@ const UnifiedAdminDashboard = () => {
   // Behavior analytics data
   const [behaviorData, setBehaviorData] = useState<BehaviorData[]>([]);
 
-  const tabs = [
-    { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'activity', label: 'User Activity', icon: Activity },
-    { id: 'behavior-profiles', label: 'Behavior Profiles', icon: Brain },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'risk', label: 'Risk Assessment', icon: Target },
-    { id: 'jit-approvals', label: 'JIT Approvals', icon: CheckCircle },
-    { id: 'policy-violations', label: 'Policy Violations', icon: AlertTriangle }
-  ];
+  // Removed tabs - now handled by UnifiedHeader navigation
 
   useEffect(() => {
     // Enhanced behavior tracking with profiling
@@ -139,19 +147,19 @@ const UnifiedAdminDashboard = () => {
     });
   }, []);
 
-  // Load behavior data when activity tab is selected
+  // Load behavior data when activity section is selected
   useEffect(() => {
-    if (activeTab === 'activity') {
+    if (currentSection === 'activity') {
       refreshBehaviorData();
     }
     
-    // Track tab changes with enhanced profiling
-    trackActionWithProfiling(`admin_tab_switch_${activeTab}`, {
-      previous_tab: 'unknown', // Could track previous tab if needed
-      current_tab: activeTab,
+    // Track section changes with enhanced profiling
+    trackActionWithProfiling(`admin_section_switch_${currentSection}`, {
+      previous_section: 'unknown', // Could track previous section if needed
+      current_section: currentSection,
       context: 'unified_admin_dashboard'
     });
-  }, [activeTab]);
+  }, [currentSection]);
 
   // Generate mock data
   const generateMockData = () => {
@@ -643,38 +651,85 @@ const UnifiedAdminDashboard = () => {
       
       <main className="flex-1 bg-white">
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-          {/* Header */}
-          <div className="flex items-center justify-between space-y-2">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-              <p className="text-muted-foreground">
-                Hospital administration and monitoring overview
-              </p>
+          {/* Section-specific Headers */}
+          {currentSection === 'overview' && (
+            <div className="flex items-center justify-between space-y-2">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+                <p className="text-muted-foreground">
+                  Hospital administration and monitoring overview
+                </p>
+              </div>
             </div>
-          </div>
+          )}
+          
+          {currentSection === 'jit-approvals' && (
+            <div className="flex items-center justify-between space-y-2">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">JIT Access Approvals</h2>
+                <p className="text-muted-foreground">
+                  Review and approve Just-In-Time access requests
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {currentSection === 'activity' && (
+            <div className="flex items-center justify-between space-y-2">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">User Activity</h2>
+                <p className="text-muted-foreground">
+                  Monitor user activities and system interactions
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {currentSection === 'behavior-profiles' && (
+            <div className="flex items-center justify-between space-y-2">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Behavior Profiles</h2>
+                <p className="text-muted-foreground">
+                  Analyze user behavior patterns and risk assessments
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {currentSection === 'analytics' && (
+            <div className="flex items-center justify-between space-y-2">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
+                <p className="text-muted-foreground">
+                  System analytics and performance metrics
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {currentSection === 'risk' && (
+            <div className="flex items-center justify-between space-y-2">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Risk Assessment</h2>
+                <p className="text-muted-foreground">
+                  Security risk analysis and threat monitoring
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {currentSection === 'policy-violations' && (
+            <div className="flex items-center justify-between space-y-2">
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Policy Violations</h2>
+                <p className="text-muted-foreground">
+                  Monitor and manage security policy violations
+                </p>
+              </div>
+            </div>
+          )}
 
-          {/* Tabs */}
-          <div className="border-b border-gray-200 mb-8">
-            <nav className="-mb-px flex space-x-8">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                      activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
+          {/* Navigation now handled by UnifiedHeader */}
 
           {/* Content */}
           {loading ? (
@@ -686,18 +741,19 @@ const UnifiedAdminDashboard = () => {
             </div>
           ) : (
             <div className="space-y-6">
-              {activeTab === 'overview' && renderDashboard()}
-              {activeTab === 'activity' && renderUserActivity()}
-              {activeTab === 'behavior-profiles' && (
+              {currentSection === 'overview' && renderDashboard()}
+              {currentSection === 'activity' && renderUserActivity()}
+              {currentSection === 'behavior-profiles' && (
                 <BehaviorProfileDashboard 
                   userId={user?.username} 
                   className="space-y-6"
                 />
               )}
-              {activeTab === 'analytics' && renderAnalytics()}
-              {activeTab === 'risk' && renderRiskAssessment()}
-              {activeTab === 'jit-approvals' && <JITApprovalPanel />}
-              {activeTab === 'policy-violations' && <PolicyViolationsPanel />}
+              {currentSection === 'analytics' && renderAnalytics()}
+              {currentSection === 'risk' && renderRiskAssessment()}
+              {currentSection === 'jit-approvals' && <JITApprovalPanel />}
+              {currentSection === 'policy-violations' && <PolicyViolationsPanel />}
+              {currentSection === 'audit' && <EnhancedAuditDashboard />}
             </div>
           )}
         </div>

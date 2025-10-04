@@ -15,12 +15,33 @@ import {
   User,
   Pill,
   ClipboardList,
-  LogOut
+  LogOut,
+  Activity,
+  Brain,
+  Target,
+  CheckCircle,
+  AlertTriangle,
+  ChevronDown
 } from 'lucide-react';
 
 const UnifiedHeader = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const [activeDropdown, setActiveDropdown] = React.useState<string | null>(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (activeDropdown && !(event.target as Element).closest('.dropdown-container')) {
+        setActiveDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeDropdown]);
 
   const handleLogout = () => {
     trackLogout();
@@ -35,17 +56,37 @@ const UnifiedHeader = () => {
   console.log('🔧 UnifiedHeader - IsAuthenticated:', isAuthenticated);
   console.log('🔧 UnifiedHeader - IsAdmin:', isAdmin);
 
-  // Admin navigation items
-  const adminNavItems = [
-    { name: 'Dashboard', path: '/admin', icon: Shield },
-    { name: 'Audit Logs', path: '/admin/audit', icon: Database },
+  // Define navigation item types
+  interface NavItem {
+    name: string;
+    path: string;
+    icon: any;
+    subItems?: NavItem[];
+  }
+
+  // Admin navigation items with sub-navigation
+  const adminNavItems: NavItem[] = [
+    { 
+      name: 'Dashboard', 
+      path: '/admin', 
+      icon: Shield,
+      subItems: [
+        { name: 'Overview', path: '/admin', icon: BarChart3 },
+        { name: 'User Activity', path: '/admin/activity', icon: Activity },
+        { name: 'Behavior Profiles', path: '/admin/behavior-profiles', icon: Brain },
+        { name: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
+        { name: 'Risk Assessment', path: '/admin/risk-assessment', icon: Target },
+        { name: 'JIT Approvals', path: '/admin/jit-approvals', icon: CheckCircle },
+        { name: 'Policy Violations', path: '/admin/policy-violations', icon: AlertTriangle }
+      ]
+    },
+    { name: 'Audit Logs', path: '/admin/activity', icon: Database },
     { name: 'Users', path: '/admin/users', icon: Users },
-    { name: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
-    { name: 'Risk Assessment', path: '/admin/risk-assessment', icon: Shield },
+    { name: 'System Monitoring', path: '/admin/system-monitoring', icon: Shield },
   ];
 
   // User navigation items (patient/doctor/nurse focused)
-  const userNavItems = [
+  const userNavItems: NavItem[] = [
     { name: 'Dashboard', path: `/${user?.username}`, icon: Home },
     { name: 'Records', path: `/${user?.username}/records`, icon: FileText },
     { name: 'Appointments', path: `/${user?.username}/appointments`, icon: Calendar },
@@ -70,19 +111,74 @@ const UnifiedHeader = () => {
           <nav className="hidden lg:flex items-center space-x-1">
             {navigationItems.map((item) => {
               const IconComponent = item.icon;
+              const hasSubItems = item.subItems && item.subItems.length > 0;
+              const isActive = window.location.pathname === item.path || 
+                (hasSubItems && item.subItems?.some(subItem => window.location.pathname === subItem.path));
+              
               return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => {
-                    trackNavigationChange(window.location.pathname, item.path);
-                    trackButtonClick(`nav_${item.name.toLowerCase().replace(/\s+/g, '_')}`, 'header');
-                  }}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium"
-                >
-                  <IconComponent className="h-4 w-4" />
-                  <span>{item.name}</span>
-                </Link>
+                <div key={item.path} className="relative dropdown-container">
+                  {hasSubItems ? (
+                    <button
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium cursor-pointer ${
+                        isActive 
+                          ? 'text-blue-600 bg-blue-50' 
+                          : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                      }`}
+                      onClick={() => setActiveDropdown(activeDropdown === item.name ? null : item.name)}
+                    >
+                      <IconComponent className="h-4 w-4" />
+                      <span>{item.name}</span>
+                      <ChevronDown className={`h-3 w-3 transition-transform ${activeDropdown === item.name ? 'rotate-180' : ''}`} />
+                    </button>
+                  ) : (
+                    <Link
+                      to={item.path}
+                      onClick={() => {
+                        trackNavigationChange(window.location.pathname, item.path);
+                        trackButtonClick(`nav_${item.name.toLowerCase().replace(/\s+/g, '_')}`, 'header');
+                      }}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                        isActive 
+                          ? 'text-blue-600 bg-blue-50' 
+                          : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                      }`}
+                    >
+                      <IconComponent className="h-4 w-4" />
+                      <span>{item.name}</span>
+                    </Link>
+                  )}
+                  
+                  {/* Dropdown Menu */}
+                  {hasSubItems && activeDropdown === item.name && (
+                    <div 
+                      className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+                    >
+                      {item.subItems?.map((subItem) => {
+                        const SubIconComponent = subItem.icon;
+                        const isSubActive = window.location.pathname === subItem.path;
+                        return (
+                          <Link
+                            key={subItem.path}
+                            to={subItem.path}
+                            onClick={() => {
+                              trackNavigationChange(window.location.pathname, subItem.path);
+                              trackButtonClick(`nav_${subItem.name.toLowerCase().replace(/\s+/g, '_')}`, 'header_dropdown');
+                              setActiveDropdown(null);
+                            }}
+                            className={`flex items-center space-x-3 px-4 py-2 text-sm transition-colors ${
+                              isSubActive 
+                                ? 'text-blue-600 bg-blue-50' 
+                                : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <SubIconComponent className="h-4 w-4" />
+                            <span>{subItem.name}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
@@ -148,22 +244,48 @@ const UnifiedHeader = () => {
             )}
             
             {/* Mobile Navigation Links */}
-            <nav className="grid grid-cols-2 gap-2">
-              {navigationItems.slice(0, 4).map((item) => {
+            <nav className="space-y-2">
+              {navigationItems.map((item) => {
                 const IconComponent = item.icon;
+                const hasSubItems = item.subItems && item.subItems.length > 0;
+                
                 return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => {
-                      trackNavigationChange(window.location.pathname, item.path);
-                      trackButtonClick(`mobile_nav_${item.name.toLowerCase().replace(/\s+/g, '_')}`, 'mobile_header');
-                    }}
-                    className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors text-sm font-medium bg-gray-50 px-3 py-2 rounded-lg"
-                  >
-                    <IconComponent className="h-4 w-4" />
-                    <span>{item.name}</span>
-                  </Link>
+                  <div key={item.path}>
+                    <Link
+                      to={item.path}
+                      onClick={() => {
+                        trackNavigationChange(window.location.pathname, item.path);
+                        trackButtonClick(`mobile_nav_${item.name.toLowerCase().replace(/\s+/g, '_')}`, 'mobile_header');
+                      }}
+                      className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors text-sm font-medium bg-gray-50 px-3 py-2 rounded-lg"
+                    >
+                      <IconComponent className="h-4 w-4" />
+                      <span>{item.name}</span>
+                    </Link>
+                    
+                    {/* Mobile Sub-navigation */}
+                    {hasSubItems && (
+                      <div className="ml-4 mt-1 space-y-1">
+                        {item.subItems?.map((subItem) => {
+                          const SubIconComponent = subItem.icon;
+                          return (
+                            <Link
+                              key={subItem.path}
+                              to={subItem.path}
+                              onClick={() => {
+                                trackNavigationChange(window.location.pathname, subItem.path);
+                                trackButtonClick(`mobile_nav_${subItem.name.toLowerCase().replace(/\s+/g, '_')}`, 'mobile_header_sub');
+                              }}
+                              className="flex items-center space-x-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors text-xs font-medium bg-gray-100 px-3 py-1 rounded"
+                            >
+                              <SubIconComponent className="h-3 w-3" />
+                              <span>{subItem.name}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </nav>

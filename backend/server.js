@@ -8,6 +8,7 @@ import hospitalRouter from './routes/hospital.js';
 import riskRouter from './routes/risk.js';
 import jitRouter from './routes/jit.js';
 import mlRiskRouter from './routes/ml-risk.js';
+import enhancedAuditRouter from './routes/enhanced-audit.js';
 import authMiddleware from './middleware/auth.js';
 
 const { Pool } = pkg;
@@ -92,6 +93,59 @@ const { Pool } = pkg;
         ON user_behavior(risk_score DESC)
       `);
 
+      // Create enhanced audit events table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS enhanced_audit_events (
+          id SERIAL PRIMARY KEY,
+          event_id VARCHAR(255) UNIQUE NOT NULL,
+          timestamp TIMESTAMP NOT NULL,
+          user_id VARCHAR(255) NOT NULL,
+          username VARCHAR(255) NOT NULL,
+          email VARCHAR(255),
+          roles TEXT[],
+          action VARCHAR(255) NOT NULL,
+          resource VARCHAR(255),
+          resource_id VARCHAR(255),
+          ip_address VARCHAR(45),
+          user_agent TEXT,
+          session_id VARCHAR(255),
+          session_duration INTEGER DEFAULT 0,
+          risk_score DECIMAL(5,2) DEFAULT 0.0,
+          risk_level VARCHAR(20) DEFAULT 'low',
+          success BOOLEAN DEFAULT true,
+          error_message TEXT,
+          metadata JSONB DEFAULT '{}',
+          compliance_flags JSONB DEFAULT '{}',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create indexes for enhanced audit events
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_enhanced_audit_user_id 
+        ON enhanced_audit_events(user_id)
+      `);
+      
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_enhanced_audit_timestamp 
+        ON enhanced_audit_events(timestamp)
+      `);
+      
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_enhanced_audit_action 
+        ON enhanced_audit_events(action)
+      `);
+      
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_enhanced_audit_risk_level 
+        ON enhanced_audit_events(risk_level)
+      `);
+      
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_enhanced_audit_user_timestamp 
+        ON enhanced_audit_events(user_id, timestamp DESC)
+      `);
+
       console.log("✅ Database tables created/verified successfully");
     } catch (error) {
       console.error("❌ Error creating tables:", error);
@@ -125,6 +179,7 @@ const { Pool } = pkg;
   app.use("/api/risk", riskRouter); // Risk assessment routes
   app.use("/api/jit", jitRouter); // JIT access control routes
   app.use("/api/ml-risk", mlRiskRouter); // ML-based risk prediction routes
+  app.use("/api/audit", enhancedAuditRouter); // Enhanced audit logging routes
   
   // Root endpoint for quick checks
   app.get('/', (req, res) => {
