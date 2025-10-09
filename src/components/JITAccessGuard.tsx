@@ -113,13 +113,13 @@ const JITAccessGuard: React.FC<JITAccessGuardProps> = ({
       return false;
     }
 
-    // Define role-based access rules
+    // Define role-based access rules (must match backend auto-approval rules)
     const accessRules: { [key: string]: string[] } = {
       'admin': ['patient_record', 'prescription', 'finance', 'lab_results', 'user_management'],
       'manager': ['patient_record', 'prescription', 'lab_results', 'user_management'],
-      'doctor': ['patient_record', 'prescription', 'lab_results'],
-      'nurse': ['patient_record'], // Nurses need approval for prescriptions
-      'accountant': ['finance'],
+      'doctor': ['patient_record', 'prescription', 'lab_results'], // Medical data auto-approved for doctors
+      'nurse': ['patient_record'], // Only patient records are auto-approved for nurses
+      'accountant': ['finance'], // Financial data auto-approved for accountants
       'user': [] // Regular users need approval for everything
     };
 
