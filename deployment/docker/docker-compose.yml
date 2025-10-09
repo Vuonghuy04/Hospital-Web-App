@@ -2,7 +2,7 @@ services:
   # Python ML Service
   ml-service:
     build:
-      context: .
+      context: ../../
       dockerfile: ml-service/Dockerfile
     container_name: hospital-ml-service
     ports:
@@ -21,7 +21,7 @@ services:
   # Backend API Service
   backend:
     build: 
-      context: ./backend
+      context: ../../backend
       dockerfile: Dockerfile
     container_name: hospital-backend
     ports:
@@ -53,7 +53,7 @@ services:
       - KEYCLOAK_ADMIN_PASSWORD=admin
     command: start-dev --import-realm
     volumes:
-      - ./demo-realm.json:/opt/keycloak/data/import/demo-realm.json
+      - ../../config/keycloak/demo-realm.json:/opt/keycloak/data/import/demo-realm.json
     restart: unless-stopped
 
   # PostgreSQL Database Service
@@ -73,8 +73,8 @@ services:
   # Frontend React Service
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: deployment/docker/Dockerfile
       args:
         - REACT_APP_API_URL=http://localhost:5002
         - REACT_APP_ADMIN_API_URL=http://localhost:5002

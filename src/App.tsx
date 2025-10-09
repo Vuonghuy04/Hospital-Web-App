@@ -75,6 +75,43 @@ function App() {
             </ProtectedRoute>
           } />
           
+          {/* Admin Dashboard Sub-routes */}
+          <Route path="/admin/activity" element={
+            <ProtectedRoute>
+              <AdminRoute requiredRole="manager">
+                <UnifiedAdminDashboard />
+              </AdminRoute>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/behavior-profiles" element={
+            <ProtectedRoute>
+              <AdminRoute requiredRole="manager">
+                <UnifiedAdminDashboard />
+              </AdminRoute>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/risk-assessment" element={
+            <ProtectedRoute>
+              <AdminRoute requiredRole="manager">
+                <UnifiedAdminDashboard />
+              </AdminRoute>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/jit-approvals" element={
+            <ProtectedRoute>
+              <AdminRoute requiredRole="manager">
+                <UnifiedAdminDashboard />
+              </AdminRoute>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/policy-violations" element={
+            <ProtectedRoute>
+              <AdminRoute requiredRole="manager">
+                <UnifiedAdminDashboard />
+              </AdminRoute>
+            </ProtectedRoute>
+          } />
+          
           {/* Audit Route - Redirect to proper admin audit page */}
           <Route path="/audit" element={
             <ProtectedRoute>

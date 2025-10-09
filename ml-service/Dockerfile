@@ -19,10 +19,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy ML service files
 COPY ml-service/python_ml_service.py .
 COPY ml-service/risk_prediction_service.py .
+COPY ml-service/behavior_profiler.py .
 
 # Copy model and data files
-COPY iso_forest_time_encoders.pkl ./
-COPY *.csv ./
+COPY data/models/iso_forest_time_encoders.pkl ./
+COPY data/datasets/*.csv ./
 
 # Create directory for model files
 RUN mkdir -p /app/models

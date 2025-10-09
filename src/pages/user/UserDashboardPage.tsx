@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/MockAuthContext';
 import { trackPageView } from '../../services/behaviorTracking';
+import { trackActionWithProfiling } from '../../services/behaviorProfiler';
 import UnifiedHeader from '../../components/UnifiedHeader';
 
 const UserDashboardPage = () => {
@@ -10,7 +11,13 @@ const UserDashboardPage = () => {
 
   useEffect(() => {
     trackPageView(`user_dashboard_${username}`);
-  }, [username]);
+    // Enhanced behavior tracking for user dashboard access
+    trackActionWithProfiling('user_dashboard_access', {
+      target_user: username,
+      role: user?.roles?.[0] || 'user',
+      context: 'user_dashboard_page'
+    });
+  }, [username, user]);
 
   // Verify user can access this page
   if (!isAuthenticated || !user || user.username !== username) {
