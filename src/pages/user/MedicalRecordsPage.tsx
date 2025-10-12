@@ -172,7 +172,6 @@ const MedicalRecordsPage = () => {
         resourceType="patient_record"
         resourceId={`patient-${user?.username}`}
         resourceName={`Medical Records for ${user?.username}`}
-        requiredRole="doctor"
         requiredAction="read"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
