@@ -147,7 +147,6 @@ const PrescriptionsPage = () => {
         resourceType="prescription"
         resourceId={`prescriptions-${user?.username}`}
         resourceName={`Prescriptions for ${user?.username}`}
-        requiredRole="doctor"
         requiredAction="read"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

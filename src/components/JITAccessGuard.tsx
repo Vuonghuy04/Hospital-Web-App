@@ -109,20 +109,17 @@ const JITAccessGuard: React.FC<JITAccessGuardProps> = ({
 
   // Check if user's role allows access
   const checkRoleBasedAccess = (userRoles: string[], resourceType: string, requiredRole?: string): boolean => {
-    if (requiredRole && !userRoles.includes(requiredRole)) {
-      return false;
-    }
-
-    // Define role-based access rules (must match backend auto-approval rules)
+    // Define role-based access rules - these roles have automatic access without JIT approval
     const accessRules: { [key: string]: string[] } = {
       'admin': ['patient_record', 'prescription', 'finance', 'lab_results', 'user_management'],
       'manager': ['patient_record', 'prescription', 'lab_results', 'user_management'],
-      'doctor': ['patient_record', 'prescription', 'lab_results'], // Medical data auto-approved for doctors
-      'nurse': ['patient_record'], // Only patient records are auto-approved for nurses
-      'accountant': ['finance'], // Financial data auto-approved for accountants
-      'user': [] // Regular users need approval for everything
+      'doctor': ['patient_record', 'prescription', 'lab_results', 'appointments'], // Doctors can access all medical data
+      'nurse': ['patient_record', 'prescription', 'appointments'], // Nurses can access medical records and prescriptions
+      'accountant': ['finance'], // Accountants can access financial data
+      'user': ['patient_record', 'prescription', 'appointments', 'lab_results'] // Patients can access their own data
     };
 
+    // Check if any of the user's roles grant access to this resource type
     for (const role of userRoles) {
       if (accessRules[role]?.includes(resourceType)) {
         return true;
