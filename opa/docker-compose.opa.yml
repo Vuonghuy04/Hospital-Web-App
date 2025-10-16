@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # OPA (Open Policy Agent) Service
+  opa:
+    image: openpolicyagent/opa:latest-envoy
+    container_name: hospital-opa
+    ports:
+      - "8181:8181"  # OPA API
+    command:
+      - "run"
+      - "--server"
+      - "--log-level=debug"
+      - "--log-format=json"
+      - "/policies"
+    volumes:
+      - ./policies:/policies:ro
+    networks:
+      - hospital-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8181/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # OPA Bundle Server (optional - for production)
+  opa-bundle-server:
+    image: nginx:alpine
+    container_name: hospital-opa-bundles
+    ports:
+      - "8888:80"
+    volumes:
+      - ./bundles:/usr/share/nginx/html:ro
+    networks:
+      - hospital-network
+    restart: unless-stopped
+
+networks:
+  hospital-network:
+    external: true
+

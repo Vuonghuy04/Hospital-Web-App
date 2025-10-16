@@ -31,9 +31,11 @@ services:
       - PORT=5002
       - DATABASE_URL=postgresql://hospital_user:hospital_password@postgres:5432/hospital_analytics
       - PYTHON_ML_SERVICE_URL=http://ml-service:5001
+      - OPA_URL=http://opa:8181
     depends_on:
       - postgres
       - ml-service
+      - opa
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:5002/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
@@ -94,6 +96,28 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # OPA (Open Policy Agent) Service
+  opa:
+    image: openpolicyagent/opa:latest
+    container_name: hospital-opa
+    ports:
+      - "8181:8181"
+    command:
+      - "run"
+      - "--server"
+      - "--log-level=info"
+      - "--log-format=json"
+      - "/policies"
+    volumes:
+      - ../../opa/policies:/policies:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8181/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 networks:
   default:
