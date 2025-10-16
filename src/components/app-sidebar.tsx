@@ -3,7 +3,6 @@
 import {
   Shield,
   Home,
-  Users,
   Lock,
   Bell,
   Settings,
@@ -15,6 +14,7 @@ import {
   Network,
   Database,
   Hospital,
+  CheckCircle,
 } from "lucide-react"
 
 import {
@@ -79,14 +79,6 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <a href="/dashboard/users">
-                    <Users />
-                    <span>Hospital Users</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
                   <a href="/dashboard/behavioral-monitoring">
                     <Shield />
                     <span>Behavior Analysis</span>
@@ -98,6 +90,14 @@ export function AppSidebar() {
                   <a href="/dashboard/risk-scores">
                     <Bell />
                     <span>Risk Assessment</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <a href="/admin/compliance">
+                    <CheckCircle />
+                    <span>Compliance Reporting</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>

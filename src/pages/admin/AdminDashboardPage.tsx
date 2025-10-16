@@ -11,7 +11,8 @@ import {
   BarChart3,
   TrendingUp,
   Clock,
-  Database
+  Database,
+  CheckCircle
 } from "lucide-react"
 import { getDashboardMetrics, getRecentActivities } from "../../lib/user-service"
 
@@ -336,6 +337,14 @@ export default function AdminDashboardPage() {
             >
               <BarChart3 className="h-6 w-6" />
               <span className="text-sm">Analytics</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-24 flex-col gap-2"
+              onClick={() => window.location.href = '/admin/compliance'}
+            >
+              <CheckCircle className="h-6 w-6" />
+              <span className="text-sm">Compliance</span>
             </Button>
           </div>
         </CardContent>

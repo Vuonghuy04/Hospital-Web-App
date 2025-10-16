@@ -22,7 +22,7 @@ const JITRequestModal: React.FC<JITRequestModalProps> = ({
   const { user } = useAuth();
   const [accessLevel, setAccessLevel] = useState('read');
   const [reason, setReason] = useState('');
-  const [duration, setDuration] = useState('2');
+  const [duration, setDuration] = useState('1800');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -37,20 +37,25 @@ const JITRequestModal: React.FC<JITRequestModalProps> = ({
     setError('');
 
     try {
+      const requestData = {
+        resourceType,
+        resourceId,
+        accessLevel,
+        reason: reason.trim(),
+        duration: parseInt(duration), // Duration in seconds
+        requesterId: user?.username || 'unknown',
+        requesterUsername: user?.username || 'unknown',
+        requesterRole: user?.roles?.[0] || 'user'
+      };
+      
+      console.log('JIT Request - Sending duration:', requestData.duration, 'seconds');
+      
       const response = await fetch('http://localhost:5002/api/jit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          resourceType,
-          resourceId,
-          accessLevel,
-          reason: reason.trim(),
-          requesterId: user?.username || 'unknown',
-          requesterUsername: user?.username || 'unknown',
-          requesterRole: user?.roles?.[0] || 'user'
-        }),
+        body: JSON.stringify(requestData),
       });
 
       const data = await response.json();
@@ -201,9 +206,9 @@ const JITRequestModal: React.FC<JITRequestModalProps> = ({
             </label>
             <div className="grid grid-cols-3 gap-4">
               {[
-                { value: '1', label: '1 Hour', desc: 'Quick access' },
-                { value: '2', label: '2 Hours', desc: 'Standard' },
-                { value: '8', label: '8 Hours', desc: 'Extended' }
+                { value: '1800', label: '30 Minutes', desc: 'Quick access' },
+                { value: '3600', label: '1 Hour', desc: 'Standard' },
+                { value: '7200', label: '2 Hours', desc: 'Extended' }
               ].map((option) => (
                 <label
                   key={option.value}
@@ -255,7 +260,12 @@ const JITRequestModal: React.FC<JITRequestModalProps> = ({
                   Requesting as: {user?.username || 'Unknown User'}
                 </div>
                 <div className="text-xs text-gray-500">
-                  Role: {user?.roles?.[0] || 'User'} • Duration: {duration} hour{duration !== '1' ? 's' : ''}
+                Role: {user?.roles?.[0] || 'User'} • Duration: {
+                  duration === '1800' ? '30 minutes' :
+                  duration === '3600' ? '1 hour' :
+                  duration === '7200' ? '2 hours' :
+                  `${Math.round(parseInt(duration) / 60)} minutes`
+                }
                 </div>
               </div>
             </div>

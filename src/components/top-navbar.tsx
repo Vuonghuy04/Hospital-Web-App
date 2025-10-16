@@ -6,7 +6,6 @@ import { Badge } from "./ui/badge"
 import { 
   Menu, 
   Shield, 
-  Users, 
   BarChart3, 
   FileText, 
   Settings, 
@@ -90,6 +89,10 @@ export function TopNavbar() {
               Risk Assessment
             </Link>
 
+            <Link to="/admin/compliance" className="text-muted-foreground hover:text-foreground">
+              Compliance Reporting
+            </Link>
+
 
           </nav>
         </SheetContent>
@@ -111,9 +114,6 @@ export function TopNavbar() {
           Analytics
         </Link>
 
-        <Link to="/admin/users" className="text-muted-foreground hover:text-foreground transition-colors">
-          Hospital Users
-        </Link>
 
         <Link to="/admin/audit" className="text-muted-foreground hover:text-foreground transition-colors">
           User Activity
@@ -125,6 +125,10 @@ export function TopNavbar() {
 
         <Link to="/admin/risk-scores" className="text-muted-foreground hover:text-foreground transition-colors">
           Risk Assessment
+        </Link>
+
+        <Link to="/admin/compliance" className="text-muted-foreground hover:text-foreground transition-colors">
+          Compliance Reporting
         </Link>
 
 

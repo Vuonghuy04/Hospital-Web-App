@@ -10,7 +10,6 @@ import {
   Calendar, 
   Database, 
   Shield, 
-  Users, 
   BarChart3,
   User,
   Pill,
@@ -76,13 +75,12 @@ const UnifiedHeader = () => {
         { name: 'Behavior Profiles', path: '/admin/behavior-profiles', icon: Brain },
         { name: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
         { name: 'Risk Assessment', path: '/admin/risk-assessment', icon: Target },
+        { name: 'Compliance Reporting', path: '/admin/compliance', icon: CheckCircle },
         { name: 'JIT Approvals', path: '/admin/jit-approvals', icon: CheckCircle },
         { name: 'Policy Violations', path: '/admin/policy-violations', icon: AlertTriangle }
       ]
     },
     { name: 'Audit Logs', path: '/admin/activity', icon: Database },
-    { name: 'Users', path: '/admin/users', icon: Users },
-    { name: 'System Monitoring', path: '/admin/system-monitoring', icon: Shield },
   ];
 
   // User navigation items (patient/doctor/nurse focused)
