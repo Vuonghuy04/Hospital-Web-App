@@ -209,76 +209,147 @@ class RiskPredictionService:
         # Prepare feature matrix
         X = self.prepare_features(df_encoded)
         
-        # Get anomaly scores
+        # Get anomaly scores from Isolation Forest
         anomaly_scores = self.iso_forest.decision_function(X)
+        
+        # Also get anomaly predictions (-1 for anomalies, 1 for normal)
+        anomaly_predictions = self.iso_forest.predict(X)
         
         # Convert to risk scores (0-1 scale, higher = more risky)
         # Isolation Forest returns negative values for anomalies
-        # We'll normalize and invert so that higher values = higher risk
         min_score = anomaly_scores.min()
         max_score = anomaly_scores.max()
         
-        if max_score == min_score:
-            # Generate more realistic risk scores based on data characteristics
-            risk_scores = self._generate_realistic_risk_scores(df)
+        # Use a combination of model scores and rule-based adjustments
+        if max_score - min_score < 0.01:  # Nearly uniform scores
+            logger.warning("Model returning uniform scores, using enhanced scoring")
+            risk_scores = self._generate_realistic_risk_scores(df_processed)
         else:
             # Normalize to 0-1 and invert (so anomalies get higher scores)
-            risk_scores = 1 - (anomaly_scores - min_score) / (max_score - min_score)
+            normalized_scores = 1 - (anomaly_scores - min_score) / (max_score - min_score)
+            
+            # Apply rule-based adjustments to add variance
+            rule_based_scores = self._generate_realistic_risk_scores(df_processed)
+            
+            # Blend model scores (70%) with rule-based scores (30%)
+            risk_scores = 0.7 * normalized_scores + 0.3 * rule_based_scores
+            
+            # Boost scores for detected anomalies
+            for i, pred in enumerate(anomaly_predictions):
+                if pred == -1:  # Anomaly detected
+                    risk_scores[i] = min(0.95, risk_scores[i] * 1.3)
         
         return risk_scores.tolist()
     
     def _generate_realistic_risk_scores(self, df):
         """
         Generate realistic risk scores based on data characteristics
-        when the model returns uniform scores
+        Uses rule-based heuristics to estimate risk
         """
         risk_scores = []
         
-        for _, row in df.iterrows():
-            base_score = 0.3  # Base risk score
+        for idx, row in df.iterrows():
+            base_score = 0.25  # Base risk score
             
-            # Adjust based on user role
-            if row.get('user_role') == 'admin':
-                base_score += 0.1  # Admins slightly higher risk
-            elif row.get('user_role') == 'manager':
-                base_score += 0.05
-            
-            # Adjust based on action type
-            action = str(row.get('action', '')).lower()
-            if 'login' in action or 'authentication' in action:
-                base_score += 0.1
-            elif 'admin' in action or 'management' in action:
+            # Role-based risk (some roles inherently have higher access privileges)
+            user_role = str(row.get('user_role', 'employee')).lower()
+            if user_role == 'admin':
                 base_score += 0.15
-            elif 'security' in action or 'risk' in action:
-                base_score += 0.2
-            elif 'view' in action or 'navigate' in action:
+            elif user_role == 'manager':
+                base_score += 0.10
+            elif user_role == 'doctor':
+                base_score += 0.08
+            elif user_role == 'nurse':
                 base_score += 0.05
+            elif user_role == 'guest':
+                base_score += 0.02
             
-            # Adjust based on time (business hours vs off-hours)
+            # Action-based risk
+            action = str(row.get('action', '')).lower()
+            if 'delete' in action or 'remove' in action:
+                base_score += 0.25
+            elif 'admin' in action or 'config' in action or 'settings' in action:
+                base_score += 0.20
+            elif 'export' in action or 'download' in action:
+                base_score += 0.15
+            elif 'audit' in action or 'log' in action:
+                base_score += 0.12
+            elif 'login' in action or 'authentication' in action:
+                base_score += 0.08
+            elif 'financial' in action or 'payment' in action:
+                base_score += 0.18
+            elif 'patient' in action or 'medical' in action or 'record' in action:
+                base_score += 0.10
+            elif 'update' in action or 'modify' in action or 'edit' in action:
+                base_score += 0.12
+            elif 'view' in action or 'read' in action or 'navigate' in action:
+                base_score += 0.03
+            
+            # Time-based risk (off-hours activity is more suspicious)
             try:
-                timestamp = pd.to_datetime(row.get('timestamp'))
-                hour = timestamp.hour
-                if hour < 7 or hour > 19:  # Outside business hours
-                    base_score += 0.1
-                if timestamp.weekday() >= 5:  # Weekend
-                    base_score += 0.1
+                if 'hour' in row:
+                    hour = int(row.get('hour'))
+                else:
+                    timestamp = pd.to_datetime(row.get('timestamp'))
+                    hour = timestamp.hour
+                
+                # Late night / early morning (12 AM - 6 AM)
+                if hour >= 0 and hour < 6:
+                    base_score += 0.15
+                # Evening (7 PM - 12 AM)
+                elif hour >= 19:
+                    base_score += 0.10
+                # Early morning (6 AM - 9 AM)
+                elif hour >= 6 and hour < 9:
+                    base_score += 0.05
+                # Business hours (9 AM - 5 PM)
+                else:
+                    base_score -= 0.05  # Reduce risk during business hours
+                
+                # Weekend activity
+                if 'is_weekend' in row and row.get('is_weekend'):
+                    base_score += 0.12
+                elif 'timestamp' in row:
+                    timestamp = pd.to_datetime(row.get('timestamp'))
+                    if timestamp.weekday() >= 5:
+                        base_score += 0.12
             except:
                 pass
             
-            # Adjust based on device type
-            device_type = row.get('device_type', 'desktop')
-            if device_type == 'mobile':
-                base_score += 0.05
-            elif device_type == 'unknown':
-                base_score += 0.1
+            # Device-based risk
+            device_type = str(row.get('device_type', 'desktop')).lower()
+            if device_type == 'new' or device_type == 'unknown':
+                base_score += 0.15
+            elif device_type == 'mobile':
+                base_score += 0.08
+            elif device_type == 'tablet':
+                base_score += 0.06
             
-            # Add some randomness to make it more realistic
+            # Session-based risk
+            session_period = row.get('session_period', 30)
+            if session_period > 240:  # Very long sessions (> 4 hours)
+                base_score += 0.10
+            elif session_period < 5:  # Very short sessions
+                base_score += 0.08
+            elif session_period > 120:  # Long sessions (> 2 hours)
+                base_score += 0.05
+            
+            # Check for sensitive actions
+            if row.get('is_sensitive_action', 0) == 1 or row.get('is_sensitive_action') == True:
+                base_score += 0.20
+            
+            # Check for failed actions
+            if row.get('is_failed_action', 0) == 1 or row.get('is_failed_action') == True:
+                base_score += 0.25
+            
+            # Add controlled randomness for variance (±5%)
             import random
-            random_factor = random.uniform(-0.1, 0.1)
+            random.seed(hash(str(row.get('username', '')) + str(row.get('timestamp', '')) + str(idx)))
+            random_factor = random.uniform(-0.05, 0.05)
             base_score += random_factor
             
-            # Ensure score is within bounds
-            final_score = max(0.1, min(0.9, base_score))
+            # Ensure score is within valid bounds
+            final_score = max(0.05, min(0.95, base_score))
             risk_scores.append(final_score)
         
         return np.array(risk_scores)
@@ -307,6 +378,14 @@ class RiskPredictionService:
         """
         Save the trained model and encoders
         """
+        import os
+        
+        # Ensure directory exists
+        model_dir = os.path.dirname(self.model_path)
+        if model_dir and not os.path.exists(model_dir):
+            os.makedirs(model_dir, exist_ok=True)
+            logger.info(f"Created directory: {model_dir}")
+        
         model_data = {
             'label_encoders': self.label_encoders,
             'iso_forest': self.iso_forest,
@@ -344,6 +423,8 @@ class RiskPredictionService:
                 self.label_encoders = {}
                 self.iso_forest = None
                 self.is_trained = False
+        else:
+            logger.info(f"Model file not found at {self.model_path}. Model will need to be trained.")
 
 def main():
     """
