@@ -2,12 +2,12 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   BarChart3, 
-  Users, 
   Activity, 
   Brain, 
   Shield, 
   Database,
-  Bot
+  Bot,
+  CheckCircle
 } from 'lucide-react';
 
 const AdminNavigation = () => {
@@ -28,12 +28,6 @@ const AdminNavigation = () => {
       description: 'System analytics and reports'
     },
     {
-      name: 'Hospital Users',
-      path: '/admin/users',
-      icon: Users,
-      description: 'Manage hospital staff and patients'
-    },
-    {
       name: 'User Activity',
       path: '/admin/user-activity',
       icon: Activity,
@@ -50,6 +44,12 @@ const AdminNavigation = () => {
       path: '/admin/risk-assessment',
       icon: Shield,
       description: 'Security risk evaluation'
+    },
+    {
+      name: 'Compliance Reporting',
+      path: '/admin/compliance',
+      icon: CheckCircle,
+      description: 'Monitor compliance violations and rules'
     }
   ];
 

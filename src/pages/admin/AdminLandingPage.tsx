@@ -16,7 +16,8 @@ import {
   Database,
   TrendingUp,
   Hospital,
-  RefreshCw
+  RefreshCw,
+  CheckCircle
 } from 'lucide-react';
 
 interface DashboardMetrics {
@@ -160,6 +161,13 @@ const AdminLandingPage = () => {
       icon: Shield,
       href: '/admin/analytics',
       color: 'from-red-500 to-red-600'
+    },
+    {
+      title: 'Compliance Reporting',
+      description: 'Monitor compliance violations and rules',
+      icon: CheckCircle,
+      href: '/admin/compliance',
+      color: 'from-blue-500 to-blue-600'
     },
     {
       title: 'Analytics',

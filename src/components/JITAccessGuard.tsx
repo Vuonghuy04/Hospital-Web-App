@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/MockAuthContext';
 import JITRequestModal from './JITRequestModal';
+import JITCountdownTimer from './JITCountdownTimer';
 import { 
   Shield, 
   Lock, 
@@ -182,7 +183,20 @@ const JITAccessGuard: React.FC<JITAccessGuardProps> = ({
   // User has access - show the protected content
   if (access.hasAccess) {
     return (
-      <div>
+      <div className="relative">
+        {/* Countdown Timer in Bottom Right Corner */}
+        {access.approvedRequest && (
+          <div className="fixed bottom-4 right-4 z-50">
+            <JITCountdownTimer 
+              expiresAt={access.approvedRequest.expires_at}
+              onExpired={() => {
+                // Refresh access when timer expires
+                checkAccess();
+              }}
+            />
+          </div>
+        )}
+        
         {access.approvedRequest && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
             <div className="flex items-center">

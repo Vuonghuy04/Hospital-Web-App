@@ -9,6 +9,7 @@ import riskRouter from './routes/risk.js';
 import jitRouter from './routes/jit.js';
 import mlRiskRouter from './routes/ml-risk.js';
 import enhancedAuditRouter from './routes/enhanced-audit.js';
+import complianceRouter from './routes/compliance.js';
 import authMiddleware from './middleware/auth.js';
 
 const { Pool } = pkg;
@@ -180,6 +181,7 @@ const { Pool } = pkg;
   app.use("/api/jit", jitRouter); // JIT access control routes
   app.use("/api/ml-risk", mlRiskRouter); // ML-based risk prediction routes
   app.use("/api/audit", enhancedAuditRouter); // Enhanced audit logging routes
+  app.use("/api/compliance", complianceRouter); // Compliance reporting routes
   
   // Root endpoint for quick checks
   app.get('/', (req, res) => {

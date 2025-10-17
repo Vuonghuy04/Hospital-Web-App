@@ -127,6 +127,7 @@ router.post('/', async (req, res) => {
       resourceId,
       accessLevel,
       reason,
+      duration = 1800, // Default to 30 minutes if not provided
       requesterId,
       requesterUsername,
       requesterRole
@@ -141,14 +142,22 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Debug: Log the received duration
+    console.log('JIT Request - Duration received:', duration, 'seconds');
+
     const client = await getClient(req.app.locals.pool);
     
     try {
       // Generate unique request ID
       const requestId = `jit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Calculate expiration time (default 2 hours)
-      const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      // Calculate expiration time (duration in seconds)
+      const expiresAt = new Date(Date.now() + duration * 1000);
+      console.log('JIT Request - Current time:', new Date().toISOString());
+      console.log('JIT Request - Duration in seconds:', duration);
+      console.log('JIT Request - Duration in milliseconds:', duration * 1000);
+      console.log('JIT Request - Expires at:', expiresAt.toISOString());
+      console.log('JIT Request - Time difference in minutes:', (expiresAt.getTime() - Date.now()) / (1000 * 60));
       
       // Insert JIT request
       const query = `
@@ -166,6 +175,9 @@ router.post('/', async (req, res) => {
 
       const result = await client.query(query, values);
       const jitRequest = result.rows[0];
+      
+      console.log('JIT Request - Stored in DB - expires_at:', jitRequest.expires_at);
+      console.log('JIT Request - Stored in DB - expires_at type:', typeof jitRequest.expires_at);
 
       // Auto-approve based on role and resource type
       let autoApproved = false;

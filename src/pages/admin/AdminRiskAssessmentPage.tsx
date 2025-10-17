@@ -125,54 +125,139 @@ const AdminRiskAssessmentPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-purple-200">Average Risk</h3>
-              <Target className="h-4 w-4 text-purple-300" />
+              <h3 className="text-sm font-medium text-black">Average Risk</h3>
+              <Target className="h-4 w-4 text-black" />
             </div>
-            <div className="text-2xl font-bold text-white">{averageRisk}%</div>
-            <p className="text-xs text-purple-300 mt-1">System wide</p>
+            <div className="text-2xl font-bold text-black">{averageRisk}%</div>
+            <p className="text-xs text-black mt-1">System wide</p>
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-purple-200">Critical Risk</h3>
-              <AlertTriangle className="h-4 w-4 text-red-400" />
+              <h3 className="text-sm font-medium text-black">Critical Risk</h3>
+              <AlertTriangle className="h-4 w-4 text-black" />
             </div>
-            <div className="text-2xl font-bold text-red-400">{criticalUsers}</div>
-            <p className="text-xs text-purple-300 mt-1">Immediate attention</p>
+            <div className="text-2xl font-bold text-black">{criticalUsers}</div>
+            <p className="text-xs text-black mt-1">Immediate attention</p>
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-purple-200">High Risk</h3>
-              <Shield className="h-4 w-4 text-yellow-400" />
+              <h3 className="text-sm font-medium text-black">High Risk</h3>
+              <Shield className="h-4 w-4 text-black" />
             </div>
-            <div className="text-2xl font-bold text-yellow-400">{highRiskUsers}</div>
-            <p className="text-xs text-purple-300 mt-1">Monitor closely</p>
+            <div className="text-2xl font-bold text-black">{highRiskUsers}</div>
+            <p className="text-xs text-black mt-1">Monitor closely</p>
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-purple-200">Total Users</h3>
-              <Users className="h-4 w-4 text-blue-400" />
+              <h3 className="text-sm font-medium text-black">Total Users</h3>
+              <Users className="h-4 w-4 text-black" />
             </div>
-            <div className="text-2xl font-bold text-blue-400">{assessments.length}</div>
-            <p className="text-xs text-purple-300 mt-1">Under assessment</p>
+            <div className="text-2xl font-bold text-black">{assessments.length}</div>
+            <p className="text-xs text-black mt-1">Under assessment</p>
           </div>
         </div>
+
+        {/* Critical Risk Details */}
+        {criticalUsers > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <AlertTriangle className="h-6 w-6 text-red-500" />
+              <h2 className="text-xl font-semibold text-black">Critical Risk Users</h2>
+              <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">{criticalUsers}</span>
+            </div>
+            <div className="space-y-3">
+              {assessments.filter(a => a.riskLevel === 'critical').map((assessment) => (
+                <div key={assessment.id} className="bg-white p-4 rounded-lg border border-red-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      <h3 className="font-medium text-black">{assessment.username}</h3>
+                      <span className="text-sm text-red-600 font-medium">CRITICAL - {assessment.overallRiskScore}%</span>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {new Date(assessment.lastAssessment).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <strong>Risk Factors:</strong> Time Risk: {assessment.riskFactors.timeBasedRisk}% | 
+                    Access Risk: {assessment.riskFactors.accessPatternRisk}% | 
+                    Location Risk: {assessment.riskFactors.locationRisk}% | 
+                    Behavior Risk: {assessment.riskFactors.behaviorRisk}%
+                  </div>
+                  <div className="text-xs text-red-600 font-medium mt-1">
+                    IMMEDIATE ACTION REQUIRED - Review access patterns and implement additional monitoring
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* High Risk Details */}
+        {highRiskUsers > 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <Shield className="h-6 w-6 text-yellow-500" />
+              <h2 className="text-xl font-semibold text-black">High Risk Users</h2>
+              <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium">{highRiskUsers}</span>
+            </div>
+            <div className="space-y-3">
+              {assessments.filter(a => a.riskLevel === 'high').map((assessment) => (
+                <div key={assessment.id} className="bg-white p-4 rounded-lg border border-yellow-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                      <h3 className="font-medium text-black">{assessment.username}</h3>
+                      <span className="text-sm text-yellow-600 font-medium">HIGH - {assessment.overallRiskScore}%</span>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {new Date(assessment.lastAssessment).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <strong>Risk Factors:</strong> Time Risk: {assessment.riskFactors.timeBasedRisk}% | 
+                    Access Risk: {assessment.riskFactors.accessPatternRisk}% | 
+                    Location Risk: {assessment.riskFactors.locationRisk}% | 
+                    Behavior Risk: {assessment.riskFactors.behaviorRisk}%
+                  </div>
+                  <div className="text-xs text-yellow-600 font-medium mt-1">
+                    MONITOR CLOSELY - Increased surveillance recommended
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* No High Risk Users */}
+        {criticalUsers === 0 && highRiskUsers === 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+            <div className="flex items-center justify-center space-x-3 mb-2">
+              <Shield className="h-6 w-6 text-green-500" />
+              <h2 className="text-xl font-semibold text-black">All Clear</h2>
+            </div>
+            <div className="text-gray-600">
+              No high-risk or critical-risk users detected. All users are currently within acceptable risk parameters.
+            </div>
+          </div>
+        )}
 
         {/* Controls */}
         <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div>
-              <h2 className="text-lg font-semibold text-white mb-2">Risk Assessment Dashboard</h2>
-              <p className="text-purple-200 text-sm">Comprehensive security risk evaluation for all hospital users</p>
+              <h2 className="text-lg font-semibold text-black mb-2">Risk Assessment Dashboard</h2>
+              <p className="text-black text-sm">Comprehensive security risk evaluation for all hospital users</p>
             </div>
             
             <div className="flex items-center space-x-4">
               <select
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
-                className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">All Users</option>
                 {assessments.map(assessment => (
@@ -188,8 +273,8 @@ const AdminRiskAssessmentPage = () => {
         {/* Risk Distribution Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2 text-blue-400" />
+            <h3 className="text-lg font-semibold text-black mb-4 flex items-center">
+              <BarChart3 className="h-5 w-5 mr-2 text-black" />
               Risk Level Distribution
             </h3>
             
@@ -201,11 +286,11 @@ const AdminRiskAssessmentPage = () => {
                 return (
                   <div key={level} className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-white capitalize flex items-center">
-                        <Shield className="h-4 w-4 mr-2" />
+                      <span className="text-sm text-black capitalize flex items-center">
+                        <Shield className="h-4 w-4 mr-2 text-black" />
                         {level} Risk
                       </span>
-                      <span className="text-sm text-purple-300">{count} users ({percentage.toFixed(1)}%)</span>
+                      <span className="text-sm text-black">{count} users ({percentage.toFixed(1)}%)</span>
                     </div>
                     <div className="w-full bg-white/10 rounded-full h-2">
                       <div 
@@ -225,8 +310,8 @@ const AdminRiskAssessmentPage = () => {
 
           {/* Top Risk Factors */}
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-              <Zap className="h-5 w-5 mr-2 text-yellow-400" />
+            <h3 className="text-lg font-semibold text-black mb-4 flex items-center">
+              <Zap className="h-5 w-5 mr-2 text-black" />
               Top Risk Factors
             </h3>
             
@@ -239,10 +324,10 @@ const AdminRiskAssessmentPage = () => {
                 return (
                   <div key={factor} className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-white capitalize">
+                      <span className="text-sm text-black capitalize">
                         {factor.replace('Risk', '').replace(/([A-Z])/g, ' $1').trim()}
                       </span>
-                      <span className="text-sm text-purple-300">{averageFactor}%</span>
+                      <span className="text-sm text-black">{averageFactor}%</span>
                     </div>
                     <div className="w-full bg-white/10 rounded-full h-2">
                       <div 
@@ -263,8 +348,8 @@ const AdminRiskAssessmentPage = () => {
         {/* Risk Assessment Table */}
         <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
           <div className="p-6 border-b border-white/10">
-            <h2 className="text-xl font-semibold text-white">User Risk Assessments</h2>
-            <p className="text-purple-200 text-sm mt-1">
+            <h2 className="text-xl font-semibold text-black">User Risk Assessments</h2>
+            <p className="text-black text-sm mt-1">
               Showing {filteredAssessments.length} of {assessments.length} users
             </p>
           </div>
@@ -273,15 +358,15 @@ const AdminRiskAssessmentPage = () => {
             <table className="w-full">
               <thead className="bg-white/5">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Risk Level</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Overall Score</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Trend</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Time Risk</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Access Risk</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Location Risk</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Behavior Risk</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">Last Assessment</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Risk Level</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Overall Score</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Trend</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Time Risk</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Access Risk</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Location Risk</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Behavior Risk</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Last Assessment</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -297,14 +382,14 @@ const AdminRiskAssessmentPage = () => {
                   ))
                 ) : filteredAssessments.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-8 text-center text-purple-300">
+                    <td colSpan={9} className="px-6 py-8 text-center text-black">
                       No risk assessments found
                     </td>
                   </tr>
                 ) : (
                   filteredAssessments.map((assessment) => (
                     <tr key={assessment.id} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 text-sm text-white font-medium">
+                      <td className="px-6 py-4 text-sm text-black font-medium">
                         {assessment.username}
                       </td>
                       <td className="px-6 py-4 text-sm">
@@ -324,7 +409,7 @@ const AdminRiskAssessmentPage = () => {
                               style={{ width: `${assessment.overallRiskScore}%` }}
                             />
                           </div>
-                          <span className="text-white font-medium">{assessment.overallRiskScore}%</span>
+                          <span className="text-black font-medium">{assessment.overallRiskScore}%</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm">
@@ -338,21 +423,21 @@ const AdminRiskAssessmentPage = () => {
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-purple-200">
+                      <td className="px-6 py-4 text-sm text-black">
                         {assessment.riskFactors.timeBasedRisk}%
                       </td>
-                      <td className="px-6 py-4 text-sm text-purple-200">
+                      <td className="px-6 py-4 text-sm text-black">
                         {assessment.riskFactors.accessPatternRisk}%
                       </td>
-                      <td className="px-6 py-4 text-sm text-purple-200">
+                      <td className="px-6 py-4 text-sm text-black">
                         {assessment.riskFactors.locationRisk}%
                       </td>
-                      <td className="px-6 py-4 text-sm text-purple-200">
+                      <td className="px-6 py-4 text-sm text-black">
                         {assessment.riskFactors.behaviorRisk}%
                       </td>
-                      <td className="px-6 py-4 text-sm text-purple-300">
+                      <td className="px-6 py-4 text-sm text-black">
                         <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4" />
+                          <Clock className="h-4 w-4 text-black" />
                           <span>{new Date(assessment.lastAssessment).toLocaleString()}</span>
                         </div>
                       </td>

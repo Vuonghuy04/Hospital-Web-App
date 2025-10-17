@@ -7,13 +7,10 @@ import JITApprovalPanel from '../components/JITApprovalPanel';
 import PolicyViolationsPanel from '../components/PolicyViolationsPanel';
 import { 
   Shield, 
-  FileText, 
-  Lock, 
   AlertTriangle, 
   CheckCircle,
   Clock,
-  User,
-  Settings
+  User
 } from 'lucide-react';
 
 const JITRequestPage = () => {
@@ -257,218 +254,28 @@ const JITRequestPage = () => {
                 </div>
               </div>
 
-              {/* Resource Access Examples */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Patient Records */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <FileText className="h-8 w-8 text-blue-500" />
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Patient Records</h3>
-                      <p className="text-sm text-gray-600">Access patient medical history</p>
-                    </div>
+              {/* Demo Scenarios */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <AlertTriangle className="h-8 w-8 text-yellow-500" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Demo Scenarios</h3>
+                    <p className="text-sm text-gray-600">Test different access scenarios</p>
                   </div>
-                  
-                  {/* Status Display */}
-                  {renderResourceStatus('patient_record', `patient-${user?.username}`, `Patient ${user?.username} Medical Record`)}
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="text-sm text-gray-600">
-                      <strong>Example:</strong> Patient ID: patient-{user?.username}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <strong>Access:</strong> Read/Write
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <strong>Duration:</strong> 2-8 hours
-                    </div>
-                  </div>
-                  
-                  {getResourceStatus('patient_record', `patient-${user?.username}`).status === 'none' && (
-                    <button
-                      onClick={() => handleRequestAccess('patient_record', `patient-${user?.username}`, `Patient ${user?.username} Medical Record`)}
-                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Request Access
-                    </button>
-                  )}
-                  
-                  {getResourceStatus('patient_record', `patient-${user?.username}`).status === 'pending' && (
-                    <button
-                      onClick={checkResourceStatuses}
-                      className="w-full bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors"
-                    >
-                      Check Status
-                    </button>
-                  )}
-                  
-                  {getResourceStatus('patient_record', `patient-${user?.username}`).status === 'approved' && (
-                    <button
-                      onClick={checkResourceStatuses}
-                      className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      Refresh Status
-                    </button>
-                  )}
                 </div>
-
-                {/* Prescriptions */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <Shield className="h-8 w-8 text-green-500" />
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Prescriptions</h3>
-                      <p className="text-sm text-gray-600">View and edit prescriptions</p>
-                    </div>
-                  </div>
-                  
-                  {/* Status Display */}
-                  {renderResourceStatus('prescription', `prescriptions-${user?.username}`, `Prescriptions for ${user?.username}`)}
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="text-sm text-gray-600">
-                      <strong>Example:</strong> Prescription ID: prescriptions-{user?.username}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <strong>Access:</strong> Read/Write
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <strong>Duration:</strong> 1-4 hours
-                    </div>
-                  </div>
-                  
-                  {getResourceStatus('prescription', `prescriptions-${user?.username}`).status === 'none' && (
-                    <button
-                      onClick={() => handleRequestAccess('prescription', `prescriptions-${user?.username}`, `Prescriptions for ${user?.username}`)}
-                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Request Access
-                    </button>
-                  )}
-                  
-                  {getResourceStatus('prescription', `prescriptions-${user?.username}`).status === 'pending' && (
-                    <button
-                      onClick={checkResourceStatuses}
-                      className="w-full bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors"
-                    >
-                      Check Status
-                    </button>
-                  )}
-                  
-                  {getResourceStatus('prescription', `prescriptions-${user?.username}`).status === 'approved' && (
-                    <button
-                      onClick={checkResourceStatuses}
-                      className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      Refresh Status
-                    </button>
-                  )}
+                <div className="space-y-2 text-sm text-gray-600 mb-4">
+                  <p><strong>Nurse → Finance:</strong> Should be denied</p>
+                  <p><strong>Accountant → Prescription:</strong> Should be denied</p>
+                  <p><strong>Nurse → Prescription Edit:</strong> Requires approval</p>
+                  <p><strong>Doctor → Patient Record:</strong> Auto-approved</p>
                 </div>
-
-                {/* Lab Results */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <FileText className="h-8 w-8 text-purple-500" />
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Lab Results</h3>
-                      <p className="text-sm text-gray-600">Access laboratory test results</p>
-                    </div>
-                  </div>
-                  
-                  {/* Status Display */}
-                  {renderResourceStatus('lab_results', `lab-${user?.username}`, `Lab Results for ${user?.username}`)}
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="text-sm text-gray-600">
-                      <strong>Example:</strong> Lab ID: lab-{user?.username}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <strong>Access:</strong> Read Only
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <strong>Duration:</strong> 1-2 hours
-                    </div>
-                  </div>
-                  
-                  {getResourceStatus('lab_results', `lab-${user?.username}`).status === 'none' && (
-                    <button
-                      onClick={() => handleRequestAccess('lab_results', `lab-${user?.username}`, `Lab Results for ${user?.username}`)}
-                      className="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
-                    >
-                      Request Access
-                    </button>
-                  )}
-                  
-                  {getResourceStatus('lab_results', `lab-${user?.username}`).status === 'pending' && (
-                    <button
-                      onClick={checkResourceStatuses}
-                      className="w-full bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors"
-                    >
-                      Check Status
-                    </button>
-                  )}
-                  
-                  {getResourceStatus('lab_results', `lab-${user?.username}`).status === 'approved' && (
-                    <button
-                      onClick={checkResourceStatuses}
-                      className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      Refresh Status
-                    </button>
-                  )}
-                </div>
-
-                {/* Finance Data (Restricted) */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 opacity-60">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <Lock className="h-8 w-8 text-red-500" />
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Financial Data</h3>
-                      <p className="text-sm text-gray-600">Access financial records</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2 mb-4">
-                    <div className="text-sm text-gray-600">
-                      <strong>Example:</strong> Finance ID: FIN-99999
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <strong>Access:</strong> Restricted
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      <strong>Duration:</strong> N/A
-                    </div>
-                  </div>
-                  <button
-                    disabled
-                    className="w-full bg-gray-400 text-white px-4 py-2 rounded-md cursor-not-allowed"
-                  >
-                    Access Denied
-                  </button>
-                </div>
-
-                {/* Demo Scenarios */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <AlertTriangle className="h-8 w-8 text-yellow-500" />
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Demo Scenarios</h3>
-                      <p className="text-sm text-gray-600">Test different access scenarios</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2 text-sm text-gray-600 mb-4">
-                    <p><strong>Nurse → Finance:</strong> Should be denied</p>
-                    <p><strong>Accountant → Prescription:</strong> Should be denied</p>
-                    <p><strong>Nurse → Prescription Edit:</strong> Requires approval</p>
-                    <p><strong>Doctor → Patient Record:</strong> Auto-approved</p>
-                  </div>
-                  <a
-                    href="/jit-demo"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-                  >
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Run Demo Tests
-                  </a>
-                </div>
+                <a
+                  href="/jit-demo"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                >
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Run Demo Tests
+                </a>
               </div>
             </div>
           )}

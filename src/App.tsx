@@ -21,6 +21,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import AdminUserActivityPage from './pages/admin/AdminUserActivityPage';
 import AdminBehaviorAnalysisPage from './pages/admin/AdminBehaviorAnalysisPage';
 import AdminRiskAssessmentPage from './pages/admin/AdminRiskAssessmentPage';
+import AdminCompliancePage from './pages/admin/AdminCompliancePage';
 import UnifiedAdminDashboard from './pages/admin/UnifiedAdminDashboard';
 import AuditPage from './pages/admin/AuditPage';
 import UserOnlyRoute from './components/UserOnlyRoute';
@@ -66,16 +67,7 @@ function App() {
               <DatabaseViewerPage />
             </ProtectedRoute>
           } />
-          {/* Admin Routes */}
-          <Route path="/admin" element={
-            <ProtectedRoute>
-              <AdminRoute requiredRole="manager">
-                <UnifiedAdminDashboard />
-              </AdminRoute>
-            </ProtectedRoute>
-          } />
-          
-          {/* Admin Dashboard Sub-routes */}
+          {/* Admin Dashboard Sub-routes - Specific routes first */}
           <Route path="/admin/activity" element={
             <ProtectedRoute>
               <AdminRoute requiredRole="manager">
@@ -105,6 +97,22 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/policy-violations" element={
+            <ProtectedRoute>
+              <AdminRoute requiredRole="manager">
+                <UnifiedAdminDashboard />
+              </AdminRoute>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/compliance" element={
+            <ProtectedRoute>
+              <AdminRoute requiredRole="manager">
+                <AdminCompliancePage />
+              </AdminRoute>
+            </ProtectedRoute>
+          } />
+          
+          {/* General Admin Route - Must be last */}
+          <Route path="/admin" element={
             <ProtectedRoute>
               <AdminRoute requiredRole="manager">
                 <UnifiedAdminDashboard />
