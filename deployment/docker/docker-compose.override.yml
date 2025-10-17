@@ -6,8 +6,8 @@ services:
   ml-service:
     volumes:
       # Mount local files for development
-      - ./ml-service:/app
-      - ./iso_forest_time_encoders.pkl:/app/iso_forest_time_encoders.pkl
+      - ../../ml-service:/app
+      - ../../data/models/iso_forest_time_encoders.pkl:/app/iso_forest_time_encoders.pkl
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
@@ -20,7 +20,7 @@ services:
       - DEBUG=hospital:*
     volumes:
       # Mount source code for hot reload
-      - ./backend:/app
+      - ../../backend:/app
       - /app/node_modules
 
   # Frontend - Development overrides
@@ -29,7 +29,7 @@ services:
       - REACT_APP_ENV=development
     volumes:
       # Mount source code for hot reload
-      - .:/app
+      - ../..:/app
       - /app/node_modules
 
   # PostgreSQL - Development overrides
